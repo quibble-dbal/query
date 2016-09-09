@@ -1,0 +1,28 @@
+{
+    "name": "quibble/query",
+    "description": "Query builder for Quibble",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Marijn Ophorst",
+            "email": "marijn@monomelodies.nl"
+        }
+    ],
+    "require": {
+        "quibble/dabble": "^1.6"
+    },
+    "require-dev": {
+        "gentry/gentry": "^0.10.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Quibble\\Query\\": "./src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Quibble\\Tests\\": "./tests"
+        }
+    }
+}
