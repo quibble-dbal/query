@@ -10,6 +10,7 @@
         }
     ],
     "require": {
+        "php": ">=7.0",
         "quibble/dabble": "^1.6"
     },
     "require-dev": {
