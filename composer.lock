@@ -4,8 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "b31f883c2fdd7e284f63033736c10e99",
-    "content-hash": "40e2f35ac18ac904146de4f42edffd93",
+    "hash": "a76aa997ce23011258742278f2c57791",
+    "content-hash": "de59a970914761ce376d0b6edf893bd5",
     "packages": [
         {
             "name": "nesbot/carbon",
@@ -312,6 +312,45 @@
             "time": "2016-07-15 06:21:55"
         },
         {
+            "name": "quibble/sqlite",
+            "version": "1.6.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/quibble-dbal/sqlite.git",
+                "reference": "6f69b6f3b9c05a8bf57ca0b0bec15ff1259fb6be"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/quibble-dbal/sqlite/zipball/6f69b6f3b9c05a8bf57ca0b0bec15ff1259fb6be",
+                "reference": "6f69b6f3b9c05a8bf57ca0b0bec15ff1259fb6be",
+                "shasum": ""
+            },
+            "require": {
+                "quibble/dabble": "^1.6"
+            },
+            "require-dev": {
+                "gentry/gentry": "^0.10.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Quibble\\Sqlite\\": "./src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Marijn Ophorst",
+                    "email": "marijn@monomelodies.nl"
+                }
+            ],
+            "description": "SQLite adapter for Quibble",
+            "time": "2016-09-09 08:06:46"
+        },
+        {
             "name": "simoneast/simple-ansi-colors",
             "version": "1.0.1",
             "source": {
@@ -452,6 +491,8 @@
     "stability-flags": [],
     "prefer-stable": false,
     "prefer-lowest": false,
-    "platform": [],
+    "platform": {
+        "php": ">=7.0"
+    },
     "platform-dev": []
 }
