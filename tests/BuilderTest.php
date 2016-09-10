@@ -17,7 +17,7 @@ CREATE TABLE test (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     foo VARCHAR(255) NOT NULL
 );
-INSERT INTO test (foo) VALUES ('bar'), ('baz');
+INSERT INTO test (foo) VALUES ('bar'), ('baz'), ('buzz');
 
 EOT
         );
@@ -37,6 +37,19 @@ EOT
         yield assert($query !== $query2);
         unset($query);
         $query = $query2->orWhere('id = ? AND foo = ?', 2, 'baz');
+        $result = $query->fetchAll(PDO::FETCH_ASSOC);
+        yield assert(count($result) == 2);
+    }
+
+    /**
+     * We can correctly instantiate a Builder and query using `in` {?}.
+     * The correct results are yielded {?}.
+     */
+    public function in()
+    {
+        $query = (new Builder($this->pdo, 'test'))
+            ->in('foo', ['bar', 'baz']);
+        yield assert($query instanceof Builder);
         $result = $query->fetchAll(PDO::FETCH_ASSOC);
         yield assert(count($result) == 2);
     }
