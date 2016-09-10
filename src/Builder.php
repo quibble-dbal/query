@@ -66,6 +66,14 @@ class Builder
         );
     }
 
+    public function in($field, array $values)
+    {
+        $sql = "$field IN (";
+        $sql .= implode(', ', array_fill(0, count($values), '?'));
+        $sql .= ')';
+        return $this->where($sql, ...array_values($values));
+    }
+
     public function getBindings() : array
     {
         return $this->bindables;
