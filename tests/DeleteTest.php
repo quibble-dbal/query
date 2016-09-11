@@ -35,7 +35,7 @@ EOT
     public function testDelete()
     {
         $res = $this->pdo->deleteFrom('test')
-            ->where(['id' => 1])
+            ->where('id = ?', 1)
             ->execute();
         yield assert($res === true);
     }
@@ -43,10 +43,10 @@ EOT
     /**
      * delete should return false if nothing was deleted {?}
      */
-    public function testNoDelete(Adapter &$db = null)
+    public function testNoDelete()
     {
         $res = $this->pdo->deleteFrom('test')
-            ->where(['id' => 12345])
+            ->where('id = ?', 12345)
             ->execute();
         yield assert($res === false);
     }
@@ -54,13 +54,13 @@ EOT
     /**
      * delete should throw an exception if nothing was deleted {?}
      */
-    public function testNoDeleteWithException(Adapter &$db = null)
+    public function testNoDeleteWithException()
     {
         $e = null;
         $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         try {
             $this->pdo->deleteFrom('test')
-                ->where(['id' => 12345])
+                ->where('id = ?', 12345)
                 ->execute();
         } catch (DeleteException $e) {
         }
