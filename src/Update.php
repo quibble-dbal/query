@@ -19,27 +19,37 @@ class Update extends Builder
         parent::__construct($adapter, $table, $init);
     }
 
-    public function execute(array ...$values) : bool
+    public function execute(array $set) : bool
     {
         $error = false;
-        foreach ($this->values as $set) {
-            $this->bindables = $set;
-            $result = false;
-            try {
-                $result = $this->getStatement()->execute(array_values($set));
-            } catch (PDOException $e) {
-                $error = new UpdateException(
-                    "$this (".implode(', ', $set).")",
-                    null,
-                    $e
-                );
+        $errmode = $this->adapter->getAttribute(PDO::ATTR_ERRMODE);
+        $this->bindables = $set;
+        $result = false;
+        try {
+            $stmt = $this->getStatement();
+            $result = $stmt->execute(array_values($set));
+            if ($affectedRows = $stmt->rowCount() and $affectedRows) {
+                return true;
             }
-            if (!$result && !$error) {
-                $error = new UpdateException("$this (".implode(', ', $set).")");
+            if ($erromode == PDO::ERRMODE_EXCEPTION) {
+                $info = $stmt->errorInfo();
+                $msg = "{$info[0]} / {$info[1]}: {$info[2]} - $this ("
+                    .implode(', ', $set).")";
+                throw new UpdateException($msg);
+            } else {
+                return false;
             }
+        } catch (PDOException $e) {
+            $error = new UpdateException(
+                "$this (".implode(', ', $set).")",
+                null,
+                $e
+            );
+        }
+        if (!$result && !$error) {
+            $error = new UpdateException("$this (".implode(', ', $set).")");
         }
         if ($error) {
-            $errmode = $this->adapter->getAttribute(PDO::ATTR_ERRMODE);
             if ($errmode == PDO::ERRMODE_EXCEPTION) {
                 throw $error;
             } else {
@@ -51,11 +61,15 @@ class Update extends Builder
 
     public function __toString() : string
     {
+        $modifiers = [];
+        foreach (array_keys($this->bindables) as $field) {
+            $modifiers[] = "$field = ?";
+        }
         return sprintf(
             "UPDATE %s SET %s WHERE %s",
-            $this->table,
-            implode(', ', array_keys($this->bindables)),
-            implode(', ', array_fill(0, count($this->bindables), '?'))
+            $this->tables[0],
+            implode(', ', $modifiers),
+            implode(' ', $this->wheres)
         );
     }
 }
