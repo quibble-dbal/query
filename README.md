@@ -24,19 +24,27 @@ $adapter = new class(/* connection params */) extends Quibble\Postgresql\Adapter
 
 ```
 
-To create a Query Builder, call the static `from` method the trait adds. Its
+To create a Query Builder, call one of the static methods the trait adds. Their
 only parameter is the base table name you want to query from:
 
 ```php
 <?php
 
-$query = $adapter::from('foo');
+$query = $adapter::selectFrom('foo');
 
 ```
 
 You can now pass the `$query` around, call methods to add stuff like conditions,
-options, joins etc. and eventually fetch the result(s). Every call chains to a
-new instance of the query builder with the previous settings attached.
+options, joins etc. and eventually fetch the result(s). Most calls will return
+the object itself so you can chain calls.
+
+You can also directly instantiate one of the `Query` SQL classes, e.g.:
+
+```php
+<?php
+
+$query = new Quibble\Query\Select($pdo, $tableName);
+```
 
 ## Joining
 Low-level:
@@ -44,7 +52,7 @@ Low-level:
 ```php
 <?php
 
-$query = $query->join('bar USING(baz)', 'LEFT');
+$query->join('bar USING(baz)', 'LEFT');
 
 ```
 
@@ -56,10 +64,10 @@ Shorthands:
 ```php
 <?php
 
-$query = $query->leftJoin('bar1 USING(baz1)')
+$query->leftJoin('bar1 USING(baz1)')
     ->rightJoin('bar2 USING(baz2)')
     ->outerJoin('bar3 USING(baz3)')
-    ->fullOuterJoin('bar4 UsING(baz4)');
+    ->fullOuterJoin('bar4 ON baz4 = ?', $baz4);
 
 ```
 
@@ -72,7 +80,7 @@ specify anything. To fine-tune, use the `select` method:
 ```php
 <?php
 
-$query = $query->select('foo', ['bar', 'baz AS buzz']);
+$query->select('foo', ['bar', 'baz AS buzz']);
 
 ```
 
@@ -84,13 +92,14 @@ SELECT foo, bar, baz AS buzz FROM ...
 ```
 
 Note that if `select` is called multiple times, all fields are _appended_ to
-the query.
+the query. The only exception if when it detects the fields were in a "pristine"
+state (i.e. `*`) in which case it acts as an override.
 
 ## Adding WHERE clauses
 ```php
 <?php
 
-$query = $query->where('foo = ?', $bar);
+$query->where('foo = ?', $bar);
 
 ```
 
@@ -99,7 +108,7 @@ A WHERE clause is an AND clause by default. To add an OR clause, use `orWhere`:
 ```php
 <?php
 
-$query = $query->orWhere('foo = ?', $bar);
+$query->orWhere('foo = ?', $bar);
 
 ```
 
@@ -109,7 +118,7 @@ calls one would simply pass in multiple clauses in parantheses where applicable:
 ```php
 <?php
 
-$query = $query->where('foo = ? AND (bar = ? OR bar = ?)', $foo, $bar1, $bar2);
+$query->where('foo = ? AND (bar = ? OR bar = ?)', $foo, $bar1, $bar2);
 // ... (AND) foo = ? AND (bar = ? OR bar = ?)
 
 ```
@@ -123,7 +132,7 @@ corresponding key names (this may be a single hash or a hash-per-parameter):
 ```php
 <?php
 
-$query = $query->where('foo = :foo AND bar = :bar', compact('foo', 'bar'));
+$query->where('foo = :foo AND bar = :bar', compact('foo', 'bar'));
 
 ```
 
@@ -133,7 +142,7 @@ Use the `order` method:
 ```php
 <?php
 
-$query = $query->order('foo ASC');
+$query->order('foo ASC');
 
 ```
 
@@ -153,19 +162,20 @@ just the offset.
 ```php
 <?php
 
-$query = $query->limit(10, 5);
+$query->limit(10, 5);
 // LIMIT 10 OFFSET 5
 
 ```
 
 ## Unions
-The `union` method accepts _another_ query builder object to use for the union.
-It throws a `PDOException` if the `select`ed fields differ.
+The `union` method accepts _another_ `Select` object to use for the union. It
+will show default error handling (see below) if the selected fields are
+incompatible, so that's up to you.
 
 ```php
 <?php
 
-$query = $query->union($anotherQuery);
+$query->union($anotherQuery);
 
 ```
 
@@ -174,19 +184,221 @@ Eventually, you're done building your query and will want data. Just use any
 or the `fetch*` methods as you would on a `PDOStatement`. They accept the same
 arguments and proxy to the underlying statement.
 
-## Error modes
-By default, fetching dats works as in PDO itself: if nothing is found, `false`
-is returned. To instead use exceptions like Dabble adapters do when using the
-convenience methods, call `setErrorMode` on the query object:
+Quibble\Query also supports a `generate` method which returns a generator
+instead (handy for large query results). It's parameters are the same as `fetch`
+and are passed verbatim:
 
 ```php
 <?php
 
-$query->setErrorMode(Quibble\Query\ERRMODE_EXCEPTION);
-// or ERRMODE_DEFAULT for the default behaviour
+$results = $query->generate(PDO::FETCH_ASSOC);
+foreach ($result as $results) {
+    // ...
+}
+```
+
+## Inserting data
+Use the `Insert` class. It's `execute` method accepts a key/value pair of values
+and performs the insert immediately:
+
+```php
+<?php
+
+$result = (new Insert($pdo, 'tablename'))->execute(['foo' => 'bar']);
+// INSERT INTO tablename (foo) VALUES (?) with bound parameter 'bar'
+```
+
+You can pass multiple arrays which will result in multiple inserts:
+
+```php
+<?php
+
+// Insert up to n rows:
+$query->execute($array1, $array2, $arrayn);
+```
+
+Adapters implementing the `Bindable` trait have the convenienst method
+`insertInto` defined:
+
+```php
+<?php
+
+$query = $pdo::insertInto('fooTable');
+```
+
+> When passing multiple arrays, mutliple `INSERT` statements are executed.
+> The `execute` method will only return true if _all_ statements succeed. When
+> using the Exception error mode, it will throw an exception if _any_ of the
+> statements fail, but the others _will_ succeed. If that is not what you want,
+> wrap the call in a transaction and roll back if you catch an exception or it
+> returns false.
+
+## Updating data
+Updating works like inserting, only the builder only accepts one set of
+key/value pairs to update. Like `Select` it uses the `Where` trait so you can
+control what gets updated:
+
+```php
+<?php
+
+$query = new Quibble\Query\Update($pdo, $tableName);
+// or, alternatively:
+$query = $pdo::updateTable($tableName);
+
+$query->where('foo = ? AND bar = ?', $foo, $bar)
+    ->execute(['baz' => $foobar]);
+// UPDATE tableName SET baz = ? WHERE foo = ? AND bar = ?
+// with bindings foo, bar and foobar.
+```
+
+## Deleting data
+Like updating, only the `execute` method does not accept any parameters:
+```php
+<?php
+
+$query = new Quibble\Query\Delete($pdo, $tableName);
+// or, alternatively:
+$query = $pdo::deleteFrom($tableName);
+
+$query->where('foo = ? AND bar = ?', $foo, $bar)
+    ->execute();
+// DELETE FROM tableName WHERE WHERE foo = ? AND bar = ?
+// with bindings foo and bar.
+```
+
+## Error modes
+Quibble\Query respects the `ATTR_ERRMODE` setting of the adapter used to
+instantiate each builder, augmenting it with its own more specific exceptions
+(these each are instances of `PDOException` as well).
+
+Overriding the ERRMODE on specific statements is not supported and may cause
+unexpected results as the Query classes consistently look towards the statement
+to determine this setting. Having said that, in 20+ years of programming I've
+personally never felt the need to override this on a per-query basis.
+
+## Decorating fields
+Any field passed as a binding for any statement type may be decorated in a
+class. The only prerequisite is that this class has to `__toString()` method
+which renders the field suitable for usage in SQL. E.g., for date fields one
+could do this:
+
+```php
+<?php
+
+$result = $pdo::insertInto('foo', ['date' => new Carbon\Carbon('+1 day')]);
+```
+
+For the converse (during selects), call the `addDecorator` method on the
+`Select` builder. It takes two arguments: the name of the field, and the
+classname to decorate with. It is assumed that the first parameter to its
+constructor will be the value; any additional arguments are passed as
+constructor arguments. Example:
+
+```php
+<?php
+
+$query = $pdo::selectFrom('foo')
+    // bar contains a date:
+    ->addDecorator('bar', Carbon\Carbon::class);
+
+$result = $query->fetch();
+get_class($result['bar']); // Carbon\Carbon
 
 ```
 
-You can also call `setErrorMode` on an adapter using the `Buildable` trait to
-set this for _all_ query objects created subsequently.
+The Quibble\Dabble package contains a generic decorator `Raw` allowing you to
+pass in arbitray SQL without any escaping. If you for whatever reason have a
+custom decorator you need to inject verbatim, either have it extend `Raw` or
+simply wrap it in one:
+
+```php
+<?php
+
+use Quibble\Dabble\Raw;
+
+class MyDecorator
+{
+    private $value = '';
+
+    public function __construct($value)
+    {
+        $this->value = $value;
+    }
+
+    public function __toString()
+    {
+        return $this->value.'()';
+    }
+}
+
+$pdo::insertInto('foo', ['bar' => new Raw(new MyDecorator('bar'))]);
+// Results in:
+// INSERT INTO foo (bar) VALUES (bar());
+// (Obviously this would only work if you actually have a function named bar()
+// in your database.)
+
+```
+
+Note that `addDecorator` can be chained like all other methods.
+
+Instead of a fieldname/classname pair, you can also pass a _callable_ as a
+single argument. This will be called for every field used with the fieldname
+and -value as its arguments. This allows you to dynamically decorate fields that
+e.g. "quack like a duck" or contain certain characters in their name that you
+know are "special markers" in your database schema (e.g. the string `date`).
+
+The callable should return the value (be it either modified or not).
+
+A third way to call `addDecorator` is with fieldname/callable arguments. For the
+specified fieldname, the value will simply be run through the callable. It
+expects a single argument (the value) and should return the modified value.
+E.g.:
+
+```php
+<?php
+
+$query->addDecorator('boolean_field', function ($value) {
+    return (bool)$value;
+});
+
+```
+
+## Accessing the raw statement
+All Query classes offer a `getStatement()` method which returns the prepared
+statement. This could come in useful if you need to do something really evil,
+or simply if you need to pass `$driver_options` to `prepare`. The options are
+the parameter to `getStatement` and are passed verbatim (the SQL is injected for
+you).
+
+Note that modifying the Query object after calling `getStatement` obviously
+won't modify its previous return value.
+
+Additionally, the Query classes also provide a `getExecutedStatement` which
+returns the current statement after being executed with the current bindings.
+This would allow you to call more low-level methods on an already executed
+statement (e.g. `getColumnMeta`).
+
+## Creating custom query builders
+Extending query classes and/or using traits, you can of course build your own
+project-specific query builders! E.g., if you need to generically decorate any
+field with `date` in it to a `Carbon` object:
+
+```php
+<?php
+
+class MySelect extends Quibble\Query\Select
+{
+    public function __construct(PDO $pdo, $table)
+    {
+        parent::__construct($pdo, $table);
+        $this->addDecorator(function ($field, $value) {
+            if (strpos($field, 'date') !== false) {
+                $value = new Carbon\Carbon($value);
+            }
+            return $value;
+        });
+    }
+}
+
+```
 
