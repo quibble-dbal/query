@@ -31,6 +31,7 @@ class Update extends Builder
             if ($affectedRows = $stmt->rowCount() and $affectedRows) {
                 return true;
             }
+            die('yay');
             if ($errmode == PDO::ERRMODE_EXCEPTION) {
                 $info = $stmt->errorInfo();
                 $msg = "{$info[0]} / {$info[1]}: {$info[2]} - $this ("
