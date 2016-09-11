@@ -4,8 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "a76aa997ce23011258742278f2c57791",
-    "content-hash": "de59a970914761ce376d0b6edf893bd5",
+    "hash": "da54b7a660900070efd57b70c8001191",
+    "content-hash": "290b60b45ed367a862304a18062f77d4",
     "packages": [
         {
             "name": "nesbot/carbon",
@@ -56,16 +56,16 @@
         },
         {
             "name": "quibble/dabble",
-            "version": "1.6.2",
+            "version": "1.7.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/quibble-dbal/dabble.git",
-                "reference": "676b72dd5dbd80491809560cc52176312ffb7c6b"
+                "reference": "69865afef6d44dc55a9e2bcd0bbdd599b91738c9"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/quibble-dbal/dabble/zipball/676b72dd5dbd80491809560cc52176312ffb7c6b",
-                "reference": "676b72dd5dbd80491809560cc52176312ffb7c6b",
+                "url": "https://api.github.com/repos/quibble-dbal/dabble/zipball/69865afef6d44dc55a9e2bcd0bbdd599b91738c9",
+                "reference": "69865afef6d44dc55a9e2bcd0bbdd599b91738c9",
                 "shasum": ""
             },
             "require": {
@@ -92,7 +92,7 @@
                 }
             ],
             "description": "DBAL for Quibble",
-            "time": "2016-08-28 14:19:31"
+            "time": "2016-09-11 12:23:19"
         },
         {
             "name": "symfony/polyfill-mbstring",
@@ -313,16 +313,16 @@
         },
         {
             "name": "quibble/sqlite",
-            "version": "1.6.2",
+            "version": "1.6.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/quibble-dbal/sqlite.git",
-                "reference": "6f69b6f3b9c05a8bf57ca0b0bec15ff1259fb6be"
+                "reference": "03d158a7e2ae9988e60a77fb414d7e94c8be0de4"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/quibble-dbal/sqlite/zipball/6f69b6f3b9c05a8bf57ca0b0bec15ff1259fb6be",
-                "reference": "6f69b6f3b9c05a8bf57ca0b0bec15ff1259fb6be",
+                "url": "https://api.github.com/repos/quibble-dbal/sqlite/zipball/03d158a7e2ae9988e60a77fb414d7e94c8be0de4",
+                "reference": "03d158a7e2ae9988e60a77fb414d7e94c8be0de4",
                 "shasum": ""
             },
             "require": {
@@ -348,7 +348,7 @@
                 }
             ],
             "description": "SQLite adapter for Quibble",
-            "time": "2016-09-09 08:06:46"
+            "time": "2016-09-11 12:25:15"
         },
         {
             "name": "simoneast/simple-ansi-colors",
