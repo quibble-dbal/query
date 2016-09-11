@@ -4,6 +4,7 @@ namespace Quibble\Query;
 
 use PDO;
 use PDOStatement;
+use Generator;
 
 class Select extends Builder
 {
@@ -74,11 +75,6 @@ class Select extends Builder
         return $this;
     }
 
-    public function count($what = '*') : int
-    {
-        return $this->select("COUNT($what)")->fetchColumn();
-    }
-
     public function having($sql) : Builder
     {
         $this->havings = $sql;
@@ -141,6 +137,19 @@ class Select extends Builder
             $this->applyDecorator($column, $field);
         }
         return $column;
+    }
+
+    public function count($what = '*') : int
+    {
+        return $this->select("COUNT($what)")->fetchColumn();
+    }
+
+    public function generate(...$args) : Generator
+    {
+        $stmt = $this->getExecutedStatement();
+        while (false !== ($row = $stmt->fetch(...$args))) {
+            yield $this->applyDecorators($row);
+        }
     }
 
     private function applyDecorators(array $row) : array
