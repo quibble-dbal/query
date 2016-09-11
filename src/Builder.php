@@ -2,6 +2,7 @@
 
 namespace Quibble\Query;
 
+use Quibble\Dabble\SqlException;
 use PDO;
 use PDOStatement;
 
@@ -38,6 +39,9 @@ abstract class Builder
                 $this->__toString(),
                 $driver_params
             );
+            if (!$this->statement) {
+                throw new SqlException($this->__toString());
+            }
         }
         return $this->statement;
     }
