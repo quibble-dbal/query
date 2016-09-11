@@ -11,6 +11,10 @@ class Select extends Builder
     use Limit;
 
     private $decorators = [];
+    protected $fields = ['*'];
+    protected $groups = null;
+    protected $havings = null;
+    protected $orders = [];
 
     public function addDecorator($field, $class, ...$ctor_args) : Builder
     {
@@ -48,6 +52,18 @@ class Select extends Builder
         return $this->join($table, 'FULL OUTER', ...$bindables);
     }
 
+    public function order($sql) : Builder
+    {
+        $this->orders[] = $sql;
+        return $this;
+    }
+
+    public function group($sql) : Builder
+    {
+        $this->group = $sql;
+        return $this;
+    }
+
     public function select(...$fields) : Builder
     {
         $this->reset();
@@ -59,14 +75,27 @@ class Select extends Builder
         return $this;
     }
 
+    public function count() : int
+    {
+        $this->reset();
+        return $this->select('*')->fetchColumn();
+    }
+
+    public function having($sql) : Builder
+    {
+        $this->havings = $sql;
+        return $this;
+    }
+
     public function __toString() : string
     {
         return sprintf(
-            'SELECT %s FROM %s%s%s%s%s%s',
+            'SELECT %s FROM %s%s%s%s%s%s%s',
             implode(', ', $this->fields),
             implode(' ', $this->tables),
             $this->wheres ? ' WHERE '.implode(' ', $this->wheres) : '',
-            $this->group ? ' GROUP BY '.$this->group : '',
+            $this->groups ? ' GROUP BY '.$this->groups : '',
+            ($this->groups && $this->havings) ? " HAVING {$this->havings} " : '',
             $this->orders ? ' ORDER BY '.implode(', ', $this->orders) : '',
             isset($this->limit) ? sprintf(' LIMIT %d', $this->limit) : '',
             isset($this->offset) ? sprintf(' OFFSET %d', $this->offset) : ''
