@@ -2,29 +2,28 @@
 
 namespace Quibble\Query;
 
-const ERRMODE_EXCEPTION = 1;
-const ERRMODE_DEFAULT = 2;
-
 trait Buildable
 {
     private static $errMode;
 
-    public static function from($table)
+    public static function selectFrom($table) : Select
     {
-        return new Builder($this, $table);
+        return new Select($this, $table);
     }
 
-    public static function setErrorMode($mode)
+    public static function insertInto($table) : Insert
     {
-        self::$errMode = $mode;
+        return new Insert($this, $table);
     }
 
-    public static function getErrorMode()
+    public static function updateTable($table) : Update
     {
-        if (!isset(self::$errMode)) {
-            self::$errMode = self::ERRMODE_DEFAULT;
-        }
-        return self::$errMode;
+        return new Update($this, $table);
+    }
+
+    public static function deleteFrom($table) : Delete
+    {
+        return new Delete($this, $table);
     }
 }
 
