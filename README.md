@@ -179,6 +179,39 @@ $query->union($anotherQuery);
 
 ```
 
+The second argument `$unionStyle` is optional and specifies the union style to
+use (`DISTINCT` or `ALL` or whatever your engine supports). It defaults to
+`DISTINCT` (like SQL).
+
+There is also a shorthand `unionAll` method which does what you'd expect.
+
+## IN statements
+The SQL IN operator is very handy to filter results based on other results.
+Using a regular `where` call you would just write out the subquery and bind
+the necessary parameters, e.g.:
+
+```php
+<?php
+
+$query->where('id IN (SELECT foo_id FROM bar WHERE bar_id = ?)', $bar_id);
+```
+
+However, sometimes your set comes from another source and you need to manually
+inject them (and the bindings) into your statement. The `Select` query builder
+offers a convenience method for this:
+
+```php
+<?php
+
+$query->in('field', $arrayOfPossibleValues);
+
+```
+
+This automatically adds a `WHERE` clause with the appropriate number of
+placeholders and adds bindings.
+
+Similarly, there's a `notIn` method.
+
 ## Fetching the data
 Eventually, you're done building your query and will want data. Just use any
 or the `fetch*` methods as you would on a `PDOStatement`. They accept the same
