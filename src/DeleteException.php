@@ -6,6 +6,8 @@
 
 namespace Quibble\Query;
 
+use Quibble\Dabble\Exception;
+
 class DeleteException extends Exception
 {
     public function __construct($message = '', $code = null, $previous = null)
