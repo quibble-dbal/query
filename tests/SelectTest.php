@@ -2,11 +2,14 @@
 
 namespace Quibble\Tests;
 
-use Quibble\Query\Builder;
+use Quibble\Query\Select;
 use Quibble\Sqlite\Adapter;
 use PDO;
 
-class BuilderTest
+/**
+ * Selecting data.
+ */
+class SelectTest
 {
     public function __wakeup()
     {
@@ -25,18 +28,16 @@ EOT
 
     /**
      * We can correctly instantiate a Builder {?}. We can then chain it using
-     * `where` {?} after which we have a new object {?}. We can also add an
-     * `orWhere` accepting multiple parameters {?}.
+     * `where` {?}. We can also add an `orWhere` accepting multiple parameters
+     * {?}.
      */
     public function instantiation()
     {
-        $query = new Builder($this->pdo, 'test');
-        yield assert($query instanceof Builder);
-        $query2 = $query->where('id = ?', 1);
-        yield assert($query2 instanceof Builder);
-        yield assert($query !== $query2);
-        unset($query);
-        $query = $query2->orWhere('id = ? AND foo = ?', 2, 'baz');
+        $query = new Select($this->pdo, 'test');
+        yield assert($query instanceof Select);
+        $query->where('id = ?', 1);
+        yield assert($query instanceof Select);
+        $query->orWhere('id = ? AND foo = ?', 2, 'baz');
         $result = $query->fetchAll(PDO::FETCH_ASSOC);
         yield assert(count($result) == 2);
     }
@@ -47,9 +48,9 @@ EOT
      */
     public function in()
     {
-        $query = (new Builder($this->pdo, 'test'))
+        $query = (new Select($this->pdo, 'test'))
             ->in('foo', ['bar', 'baz']);
-        yield assert($query instanceof Builder);
+        yield assert($query instanceof Select);
         $result = $query->fetchAll(PDO::FETCH_ASSOC);
         yield assert(count($result) == 2);
     }
