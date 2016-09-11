@@ -19,37 +19,34 @@ class Delete extends Builder
         parent::__construct($adapter, $table, $init);
     }
 
-    public function execute(array ...$values) : bool
+    public function execute() : bool
     {
         $error = false;
         $errmode = $this->adapter->getAttribute(PDO::ATTR_ERRMODE);
-        foreach ($this->values as $set) {
-            $this->bindables = $set;
-            $result = false;
-            try {
-                $stmt = $this->getStatement();
-                $result = $stmt->execute(array_values($set));
-                if ($affectedRows = $stmt->rowCount() and $affectedRows) {
-                    return true;
-                }
-                if ($errmode == PDO::ERRMODE_EXECPTION) {
-                    $info = $stmt->errorInfo();
-                    $msg = "{$info[0]} / {$info[1]}: {$info[2]} - $this ("
-                        .implode(', ', $set).")";
-                    throw new DeleteException($msg);
-                } else {
-                    return false;
-                }
-            } catch (PDOException $e) {
-                $error = new DeleteException(
-                    "$this (".implode(', ', $set).")",
-                    null,
-                    $e
-                );
+        $result = false;
+        try {
+            $stmt = $this->getStatement();
+            $result = $stmt->execute(array_values($this->bindables));
+            if ($affectedRows = $stmt->rowCount() and $affectedRows) {
+                return true;
             }
-            if (!$result && !$error) {
-                $error = new DeleteException("$this (".implode(', ', $set).")");
+            if ($errmode == PDO::ERRMODE_EXCEPTION) {
+                $info = $stmt->errorInfo();
+                $msg = "{$info[0]} / {$info[1]}: {$info[2]} - $this ("
+                    .implode(', ', $this->bindables).")";
+                throw new DeleteException($msg);
+            } else {
+                return false;
             }
+        } catch (PDOException $e) {
+            $error = new DeleteException(
+                "$this (".implode(', ', $this->bindables).")",
+                null,
+                $e
+            );
+        }
+        if (!$result && !$error) {
+            $error = new DeleteException("$this (".implode(', ', $set).")");
         }
         if ($error) {
             if ($errmode == PDO::ERRMODE_EXCEPTION) {
