@@ -15,6 +15,7 @@ class Select extends Builder
     protected $groups = null;
     protected $havings = null;
     protected $orders = [];
+    protected $unions = [];
 
     public function addDecorator($field, $class, ...$ctor_args) : Builder
     {
@@ -26,7 +27,7 @@ class Select extends Builder
     {
         $this->tables = array_merge(
             $this->tables,
-            [sprintf('% JOIN %s', $style, $table)]
+            [sprintf('%s JOIN %s', $style, $table)]
         );
         return $this;
     }
@@ -84,9 +85,19 @@ class Select extends Builder
         return $this;
     }
 
+    public function union(Select $query, $style = '')
+    {
+        $this->unions[] = compact('style', 'query');
+    }
+
+    public function unionAll(Select $query)
+    {
+        return $this->union($query, 'ALL');
+    }
+
     public function __toString() : string
     {
-        return sprintf(
+        $sql = sprintf(
             'SELECT %s FROM %s%s%s%s%s%s%s',
             implode(', ', $this->fields),
             implode(' ', $this->tables),
@@ -97,6 +108,17 @@ class Select extends Builder
             isset($this->limit) ? sprintf(' LIMIT %d', $this->limit) : '',
             isset($this->offset) ? sprintf(' OFFSET %d', $this->offset) : ''
         );
+        if ($this->unions) {
+            foreach ($this->unions as $union) {
+                extract($union);
+                $sql .= " UNION $style $query";
+                $this->bindables = array_merge(
+                    $this->bindables,
+                    $query->getBindings()
+                );
+            }
+        }
+        return $sql;
     }
 
     public function fetch(...$args) : array
