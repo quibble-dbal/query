@@ -36,5 +36,13 @@ trait Where
         $sql .= ')';
         return $this->where($sql, ...array_values($values));
     }
+
+    public function notIn($field, array $values) : Builder
+    {
+        $sql = "$field NOT IN (";
+        $sql .= implode(', ', array_fill(0, count($values), '?'));
+        $sql .= ')';
+        return $this->where($sql, ...array_values($values));
+    }
 }
 
