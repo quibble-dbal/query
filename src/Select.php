@@ -74,9 +74,9 @@ class Select extends Builder
         return $this;
     }
 
-    public function count() : int
+    public function count($what = '*') : int
     {
-        return $this->select('*')->fetchColumn();
+        return $this->select("COUNT($what)")->fetchColumn();
     }
 
     public function having($sql) : Builder
