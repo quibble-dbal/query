@@ -23,11 +23,11 @@ class Update extends Builder
     {
         $error = false;
         $errmode = $this->adapter->getAttribute(PDO::ATTR_ERRMODE);
-        $this->bindables = $set;
+        $this->bindables = array_merge($set, $this->bindables);
         $result = false;
         try {
             $stmt = $this->getStatement();
-            $result = $stmt->execute(array_values($set));
+            $result = $stmt->execute(array_values($this->bindables));
             if ($affectedRows = $stmt->rowCount() and $affectedRows) {
                 return true;
             }
@@ -63,7 +63,9 @@ class Update extends Builder
     {
         $modifiers = [];
         foreach (array_keys($this->bindables) as $field) {
-            $modifiers[] = "$field = ?";
+            if (!is_numeric($field)) {
+                $modifiers[] = "$field = ?";
+            }
         }
         return sprintf(
             "UPDATE %s SET %s WHERE %s",
