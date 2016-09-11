@@ -22,11 +22,24 @@ class Delete extends Builder
     public function execute(array ...$values) : bool
     {
         $error = false;
+        $errmode = $this->adapter->getAttribute(PDO::ATTR_ERRMODE);
         foreach ($this->values as $set) {
             $this->bindables = $set;
             $result = false;
             try {
-                $result = $this->getStatement()->execute(array_values($set));
+                $stmt = $this->getStatement();
+                $result = $stmt->execute(array_values($set));
+                if ($affectedRows = $stmt->rowCount() and $affectedRows) {
+                    return true;
+                }
+                if ($errmode == PDO::ERRMODE_EXECPTION) {
+                    $info = $stmt->errorInfo();
+                    $msg = "{$info[0]} / {$info[1]}: {$info[2]} - $this ("
+                        .implode(', ', $set).")";
+                    throw new DeleteException($msg);
+                } else {
+                    return false;
+                }
             } catch (PDOException $e) {
                 $error = new DeleteException(
                     "$this (".implode(', ', $set).")",
@@ -39,7 +52,6 @@ class Delete extends Builder
             }
         }
         if ($error) {
-            $errmode = $this->adapter->getAttribute(PDO::ATTR_ERRMODE);
             if ($errmode == PDO::ERRMODE_EXCEPTION) {
                 throw $error;
             } else {
@@ -53,9 +65,8 @@ class Delete extends Builder
     {
         return sprintf(
             "DELETE FROM %s WHERE %s",
-            $this->table,
-            implode(', ', array_keys($this->bindables)),
-            implode(', ', array_fill(0, count($this->bindables), '?'))
+            $this->tables[0],
+            implode(' ', $this->wheres)
         );
     }
 }
