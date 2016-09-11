@@ -24,7 +24,6 @@ class Select extends Builder
 
     public function join($table, $style = '', ...$bindables) : Builder
     {
-        $this->reset();
         $this->tables = array_merge(
             $this->tables,
             [sprintf('% JOIN %s', $style, $table)]
@@ -66,7 +65,6 @@ class Select extends Builder
 
     public function select(...$fields) : Builder
     {
-        $this->reset();
         if ($this->fields == ['*']) {
             $this->fields = $fields;
         } else {
@@ -77,7 +75,6 @@ class Select extends Builder
 
     public function count() : int
     {
-        $this->reset();
         return $this->select('*')->fetchColumn();
     }
 
