@@ -6,7 +6,7 @@
 
 namespace Quibble\Query;
 
-use Quibble\Daable\Exception;
+use Quibble\Dabble\Exception;
 
 class InsertException extends Exception
 {
