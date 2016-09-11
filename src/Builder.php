@@ -9,10 +9,6 @@ abstract class Builder
 {
     protected $adapter;
     protected $tables = [];
-    protected $fields = ['*'];
-    protected $wheres = [];
-    protected $group = null;
-    protected $orders = [];
     protected $bindables = [];
     private $statement;
 
