@@ -4,8 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "da54b7a660900070efd57b70c8001191",
-    "content-hash": "290b60b45ed367a862304a18062f77d4",
+    "hash": "e3e65519d6600205f7ba3b3237d881da",
+    "content-hash": "bef526451693053ed3de4147da2930f9",
     "packages": [
         {
             "name": "nesbot/carbon",
@@ -56,16 +56,16 @@
         },
         {
             "name": "quibble/dabble",
-            "version": "1.7.1",
+            "version": "1.7.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/quibble-dbal/dabble.git",
-                "reference": "69865afef6d44dc55a9e2bcd0bbdd599b91738c9"
+                "reference": "dbfac04b0fd52f818589914db5189901003148a6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/quibble-dbal/dabble/zipball/69865afef6d44dc55a9e2bcd0bbdd599b91738c9",
-                "reference": "69865afef6d44dc55a9e2bcd0bbdd599b91738c9",
+                "url": "https://api.github.com/repos/quibble-dbal/dabble/zipball/dbfac04b0fd52f818589914db5189901003148a6",
+                "reference": "dbfac04b0fd52f818589914db5189901003148a6",
                 "shasum": ""
             },
             "require": {
@@ -92,7 +92,7 @@
                 }
             ],
             "description": "DBAL for Quibble",
-            "time": "2016-09-11 12:23:19"
+            "time": "2016-09-11 12:29:24"
         },
         {
             "name": "symfony/polyfill-mbstring",
