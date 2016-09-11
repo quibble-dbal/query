@@ -47,7 +47,7 @@ EOT
     {
         $res = $this->pdo->updateTable('test')
             ->where('id = ?', 1234)
-            ->execute(['name' => 'adams']);
+            ->execute(['foo' => 'adams']);
         yield assert($res === false);
     }
 
@@ -61,7 +61,7 @@ EOT
         try {
             $this->pdo->updateTable('test')
                 ->where('id = ?', 12345)
-                ->execute(['name' => 'adams']);
+                ->execute(['foo' => 'adams']);
         } catch (UpdateException $e) {
         }
         yield assert($e instanceof UpdateException);
