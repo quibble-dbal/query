@@ -14,7 +14,7 @@ class DeleteTest
 {
     public function __wakeup()
     {
-        $this->pdo = new class(':memory') extends Adapter {
+        $this->pdo = new class(':memory:') extends Adapter {
             use Buildable;
         };
         $this->pdo->exec(<<<EOT
