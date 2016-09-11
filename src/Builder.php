@@ -5,73 +5,24 @@ namespace Quibble\Query;
 use PDO;
 use PDOStatement;
 
-class Builder
+abstract class Builder
 {
-    private $adapter;
-    private $tables = [];
-    private $fields = ['*'];
-    private $wheres = [];
-    private $order = [];
-    private $bindables = [];
+    protected $adapter;
+    protected $tables = [];
+    protected $fields = ['*'];
+    protected $wheres = [];
+    protected $group = null;
+    protected $orders = [];
+    protected $bindables = [];
+    private $statement;
 
-    public function __construct(PDO $adapter, $table, array $init = [])
+    public function __construct(PDO $adapter, $table)
     {
         $this->adapter = $adapter;
         if (is_string($table)) {
             $table = [$table];
         }
         $this->tables = $table;
-        foreach ($init as $key => $value) {
-            $this->$key = $value;
-        }
-    }
-
-    public function where($sql, ...$bindables) : Builder
-    {
-        return new static(
-            $this->adapter,
-            $this->tables,
-            [
-                'wheres' => array_merge($this->wheres, [$sql]),
-                'bindables' => array_merge($this->bindables, $bindables),
-            ]
-        );
-    }
-
-    public function andWhere($sql, ...$bindables) : Builder
-    {
-        if (!$this->wheres) {
-            $this->wheres[] = '(1=1)';
-        }
-        return $this->where("AND ($sql)", ...$bindables);
-    }
-
-    public function orWhere($sql, ...$bindables) : Builder
-    {
-        if ($this->wheres) {
-            $sql = "OR ($sql)";
-        }
-        return $this->where($sql, ...$bindables);
-    }
-
-    public function join($table, $style = '', ...$bindables) : Builder
-    {
-        return new static(
-            $this->adapter,
-            array_merge($this->tables, [sprintf('% JOIN %s', $style, $table)]),
-            [
-                'wheres' => $this->wheres,
-                'bindables' => array_merge($this->bindables, $bindables),
-            ]
-        );
-    }
-
-    public function in($field, array $values)
-    {
-        $sql = "$field IN (";
-        $sql .= implode(', ', array_fill(0, count($values), '?'));
-        $sql .= ')';
-        return $this->where($sql, ...array_values($values));
     }
 
     public function getBindings() : array
@@ -86,26 +37,34 @@ class Builder
 
     public function getStatement($driver_params = null) : PDOStatement
     {
-        return $this->adapter->prepare($this->__toString(), $driver_params);
+        if (!isset($this->statement)) {
+            $this->statement = $this->adapter->prepare(
+                $this->__toString(),
+                $driver_params
+            );
+        }
+        return $this->statement;
     }
 
-    public function __toString() : string
+    public function getExecutedStatement($driver_params = null) : PDOStatement
     {
-        return sprintf(
-            'SELECT %s FROM %s %s %s %s',
-            implode(', ', $this->fields),
-            implode(' ', $this->tables),
-            $this->wheres ? ' WHERE '.implode(' ', $this->wheres) : '',
-            $this->order ? ' ORDER BY '.implode(', ', $this->order) : '',
-            ''
-        );
+        $stmt = $this->getStatement();
+        $stmt->execute($this->getBindings());
+        return $stmt;
+    }
+
+    abstract public function __toString() : string;
+
+    public function reset()
+    {
+        $this->statement = null;
     }
 
     public function __call($fn, array $params = [])
     {
         $stmt = $this->getStatement();
         $stmt->execute($this->getBindings());
-        return call_user_func_array([$stmt, $fn], $params);
+        return $stmt->$fn(...$params);
     }
 }
 
