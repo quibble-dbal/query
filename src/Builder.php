@@ -11,7 +11,7 @@ abstract class Builder
     protected $adapter;
     protected $tables = [];
     protected $bindables = [];
-    private $statement;
+    private $statements = [];
 
     public function __construct(PDO $adapter, $table)
     {
@@ -34,16 +34,18 @@ abstract class Builder
 
     public function getStatement($driver_params = null) : PDOStatement
     {
-        if (!isset($this->statement)) {
-            $this->statement = $this->adapter->prepare(
-                $this->__toString(),
+        $sql = $this->__toString();
+        if (!isset($this->statements[$sql])) {
+            $this->statements[$sql] = $this->adapter->prepare(
+                $sql,
                 $driver_params
             );
-            if (!$this->statement) {
+            if (!$this->statements[$sql]) {
+                unset($this->statements[$sql]);
                 throw new SqlException($this->__toString());
             }
         }
-        return $this->statement;
+        return $this->statements[$sql];
     }
 
     public function getExecutedStatement($driver_params = null) : PDOStatement
@@ -54,17 +56,5 @@ abstract class Builder
     }
 
     abstract public function __toString() : string;
-
-    public function reset()
-    {
-        $this->statement = null;
-    }
-
-    public function __call($fn, array $params = [])
-    {
-        $stmt = $this->getStatement();
-        $stmt->execute($this->getBindings());
-        return $stmt->$fn(...$params);
-    }
 }
 
