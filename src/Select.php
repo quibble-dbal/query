@@ -30,6 +30,7 @@ class Select extends Builder
             $this->tables,
             [sprintf('%s JOIN %s', $style, $table)]
         );
+        $this->bindables = array_merge($this->bindables, $bindables);
         return $this;
     }
 
@@ -117,16 +118,30 @@ class Select extends Builder
         return $sql;
     }
 
-    public function fetch(...$args) : array
+    public function fetch(...$args)
     {
+        $errmode = $this->adapter->getAttribute(PDO::ATTR_ERRMODE);
         $stmt = $this->getExecutedStatement();
-        return $this->applyDecorators($stmt->fetch(...$args));
+        if (false !== ($result = $stmt->fetch(...$args))) {
+            return $this->applyDecorators($stmt->fetch(...$args));
+        } elseif ($errmode == PDO::ERRMODE_EXCEPTION) {
+            throw new SelectException("$this (".implode(', ', $this->bindables).")");
+        } else {
+            return false;
+        }
     }
 
-    public function fetchAll(...$args) : array
+    public function fetchAll(...$args)
     {
+        $errmode = $this->adapter->getAttribute(PDO::ATTR_ERRMODE);
         $stmt = $this->getExecutedStatement();
-        return array_map([$this, 'applyDecorators'], $stmt->fetchAll(...$args));
+        if (false !== ($result = $stmt->fetchAll(...$args)) and $result) {
+            return array_map([$this, 'applyDecorators'], $result);
+        } elseif ($errmode == PDO::ERRMODE_EXCEPTION) {
+            throw new SelectException("$this (".implode(', ', $this->bindables).")");
+        } else {
+            return $result;
+        }
     }
 
     public function fetchColumn(int $column_number = 0, $field = null)
@@ -141,7 +156,7 @@ class Select extends Builder
 
     public function count($what = '*') : int
     {
-        return $this->select("COUNT($what)")->fetchColumn();
+        return (int)$this->select("COUNT($what)")->fetchColumn();
     }
 
     public function generate(...$args) : Generator
