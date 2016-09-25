@@ -41,18 +41,5 @@ EOT
         $result = $query->fetchAll(PDO::FETCH_ASSOC);
         yield assert(count($result) == 2);
     }
-
-    /**
-     * We can correctly instantiate a Builder and query using `in` {?}.
-     * The correct results are yielded {?}.
-     */
-    public function in()
-    {
-        $query = (new Select($this->pdo, 'test'))
-            ->in('foo', ['bar', 'baz']);
-        yield assert($query instanceof Select);
-        $result = $query->fetchAll(PDO::FETCH_ASSOC);
-        yield assert(count($result) == 2);
-    }
 }
 
