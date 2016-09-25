@@ -155,6 +155,19 @@ class Select extends Builder
         return $column;
     }
 
+    public function fetchObject($class_name = 'stdClass', array $ctor_args = [])
+    {
+        $errmode = $this->adapter->getAttribute(PDO::ATTR_ERRMODE);
+        $stmt = $this->getExecutedStatement();
+        if (false !== ($result = $stmt->fetchObject($class_name, $ctor_args))) {
+            return $this->applyDecorators($stmt->fetch(...$args));
+        } elseif ($errmode == PDO::ERRMODE_EXCEPTION) {
+            throw new SelectException("$this (".implode(', ', $this->bindables).")");
+        } else {
+            return false;
+        }
+    }
+
     public function count($what = '*') : int
     {
         return (int)$this->select("COUNT($what)")->fetchColumn();
@@ -168,7 +181,7 @@ class Select extends Builder
         }
     }
 
-    private function applyDecorators(array $row) : array
+    private function applyDecorators($row)
     {
         array_walk($row, [$this, 'applyDecorator']);
         return $row;
