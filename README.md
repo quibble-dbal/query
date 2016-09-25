@@ -211,6 +211,28 @@ Similarly, there's a `notIn` method. These methods return _strings_ so you can
 directly pass them to `where`. The bindings are automatically added to the query
 object, so generally you'll use them in conjunction as in the above example.
 
+## GROUPing queries
+A `Select` query can have a single `GROUP BY` clause added (i.e., if you call it
+multiple times it will be overwritten). Use the `groupBy` method:
+
+```php
+<?php
+
+$query->groupBy('foo, bar');
+
+```
+
+In conjunction, there is also a `having` method which accepts bindable
+additional parameters:
+
+```php
+<?php
+
+$query->groupBy('foo, bar')
+    ->having('bar > ?', 42);
+
+```
+
 ## Fetching the data
 Eventually, you're done building your query and will want data. Just use any
 or the `fetch*` methods as you would on a `PDOStatement`. They accept the same

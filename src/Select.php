@@ -13,7 +13,7 @@ class Select extends Builder
 
     private $decorators = [];
     protected $fields = ['*'];
-    protected $groups = null;
+    protected $group = null;
     protected $havings = null;
     protected $orders = [];
     protected $unions = [];
@@ -60,7 +60,7 @@ class Select extends Builder
         return $this;
     }
 
-    public function group($sql) : Builder
+    public function groupBy($sql) : Builder
     {
         $this->group = $sql;
         return $this;
@@ -76,9 +76,10 @@ class Select extends Builder
         return $this;
     }
 
-    public function having($sql) : Builder
+    public function having($sql, ...$bindables) : Builder
     {
         $this->havings = $sql;
+        $this->bindables = array_merge($this->bindables, $bindables);
         return $this;
     }
 
