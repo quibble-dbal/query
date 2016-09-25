@@ -51,7 +51,16 @@ abstract class Builder
     public function getExecutedStatement($driver_params = null) : PDOStatement
     {
         $stmt = $this->getStatement();
-        $stmt->execute($this->getBindings());
+        foreach ($this->getBindings() as $key => $value) {
+            if (is_null($value)) {
+                $stmt->bindParam($key + 1, $value, PDO::PARAM_NULL);
+            } elseif (is_bool($value)) {
+                $stmt->bindParam($key + 1, $value, PDO::PARAM_BOOL);
+            } else {
+                $stmt->bindParam($key + 1, $value, PDO::PARAM_STR);
+            }
+        }
+        $stmt->execute();
         return $stmt;
     }
 
