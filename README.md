@@ -137,12 +137,12 @@ $query->where('foo = :foo AND bar = :bar', compact('foo', 'bar'));
 ```
 
 ## Ordering
-Use the `order` method:
+Use the `orderBy` method:
 
 ```php
 <?php
 
-$query->order('foo ASC');
+$query->orderBy('foo ASC');
 
 ```
 
@@ -279,7 +279,7 @@ You can pass multiple arrays which will result in multiple inserts:
 $query->execute($array1, $array2, $arrayn);
 ```
 
-Adapters implementing the `Bindable` trait have the convenienst method
+Adapters implementing the `Bindable` trait have the convenience method
 `insertInto` defined:
 
 ```php
