@@ -235,6 +235,8 @@ number of results. You've guessed it, it's called `count` :) It takes a single
 argument, `$count`, specifying what to count. It defaults to `"*"` so most of
 the times you can omit it.
 
+This method returns an integer with the number of found rows.
+
 ## Inserting data
 Use the `Insert` class. It's `execute` method accepts a key/value pair of values
 and performs the insert immediately:
