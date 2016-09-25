@@ -99,8 +99,8 @@ class Select extends Builder
             implode(', ', $this->fields),
             implode(' ', $this->tables),
             $this->wheres ? ' WHERE '.implode(' ', $this->wheres) : '',
-            $this->groups ? ' GROUP BY '.$this->groups : '',
-            ($this->groups && $this->havings) ? " HAVING {$this->havings} " : '',
+            $this->group ? ' GROUP BY '.$this->group : '',
+            ($this->group && $this->havings) ? " HAVING {$this->havings} " : '',
             $this->orders ? ' ORDER BY '.implode(', ', $this->orders) : '',
             isset($this->limit) ? sprintf(' LIMIT %d', $this->limit) : '',
             isset($this->offset) ? sprintf(' OFFSET %d', $this->offset) : ''
