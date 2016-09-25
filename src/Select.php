@@ -76,9 +76,10 @@ class Select extends Builder
         return $this;
     }
 
-    public function having($sql) : Builder
+    public function having($sql, ...$bindables) : Builder
     {
         $this->havings = $sql;
+        $this->bindables = array_merge($this->bindables, $bindables);
         return $this;
     }
 
