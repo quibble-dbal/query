@@ -54,7 +54,7 @@ class Select extends Builder
         return $this->join($table, 'FULL OUTER', ...$bindables);
     }
 
-    public function order($sql) : Builder
+    public function orderBy($sql) : Builder
     {
         $this->orders[] = $sql;
         return $this;
@@ -124,7 +124,7 @@ class Select extends Builder
         $errmode = $this->adapter->getAttribute(PDO::ATTR_ERRMODE);
         $stmt = $this->getExecutedStatement();
         if (false !== ($result = $stmt->fetch(...$args))) {
-            return $this->applyDecorators($stmt->fetch(...$args));
+            return $this->applyDecorators($result);
         } elseif ($errmode == PDO::ERRMODE_EXCEPTION) {
             throw new SelectException("$this (".implode(', ', $this->bindables).")");
         } else {
@@ -160,7 +160,7 @@ class Select extends Builder
         $errmode = $this->adapter->getAttribute(PDO::ATTR_ERRMODE);
         $stmt = $this->getExecutedStatement();
         if (false !== ($result = $stmt->fetchObject($class_name, $ctor_args))) {
-            return $this->applyDecorators($stmt->fetch(...$args));
+            return $this->applyDecorators($result);
         } elseif ($errmode == PDO::ERRMODE_EXCEPTION) {
             throw new SelectException("$this (".implode(', ', $this->bindables).")");
         } else {
