@@ -60,7 +60,7 @@ class Select extends Builder
         return $this;
     }
 
-    public function group($sql) : Builder
+    public function groupBy($sql) : Builder
     {
         $this->group = $sql;
         return $this;
