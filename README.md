@@ -203,14 +203,13 @@ offers a convenience method for this:
 ```php
 <?php
 
-$query->in('field', $arrayOfPossibleValues);
+$query->where($query->in('field', $arrayOfPossibleValues));
 
 ```
 
-This automatically adds a `WHERE` clause with the appropriate number of
-placeholders and adds bindings.
-
-Similarly, there's a `notIn` method.
+Similarly, there's a `notIn` method. These methods return _strings_ so you can
+directly pass them to `where`. The bindings are automatically added to the query
+object, so generally you'll use them in conjunction as in the above example.
 
 ## Fetching the data
 Eventually, you're done building your query and will want data. Just use any
@@ -229,6 +228,12 @@ foreach ($result as $results) {
     // ...
 }
 ```
+
+## Counting rows
+The `Select` builder also offers a simple convenience method to simply count the
+number of results. You've guessed it, it's called `count` :) It takes a single
+argument, `$count`, specifying what to count. It defaults to `"*"` so most of
+the times you can omit it.
 
 ## Inserting data
 Use the `Insert` class. It's `execute` method accepts a key/value pair of values
