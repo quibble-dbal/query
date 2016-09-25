@@ -29,20 +29,22 @@ trait Where
         return $this->where($sql, ...$bindables);
     }
 
-    public function in($field, array $values) : Builder
+    public function in($field, array $values) : string
     {
         $sql = "$field IN (";
         $sql .= implode(', ', array_fill(0, count($values), '?'));
         $sql .= ')';
-        return $this->where($sql, ...array_values($values));
+        $this->bindables = array_merge($this->bindables, array_values($values));
+        return $sql;
     }
 
-    public function notIn($field, array $values) : Builder
+    public function notIn($field, array $values) : string
     {
         $sql = "$field NOT IN (";
         $sql .= implode(', ', array_fill(0, count($values), '?'));
         $sql .= ')';
-        return $this->where($sql, ...array_values($values));
+        $this->bindables = array_merge($this->bindables, array_values($values));
+        return $sql;
     }
 }
 
