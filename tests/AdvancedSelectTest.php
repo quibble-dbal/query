@@ -88,7 +88,7 @@ EOT
     public function in()
     {
         $query = new Select($this->pdo, 'test');
-        $result = $query->in('id', [1, 2])->fetchAll();
+        $result = $query->where($query->in('id', [1, 2]))->fetchAll();
         yield assert(count($result) == 2);
     }
 }
