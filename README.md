@@ -24,13 +24,13 @@ $adapter = new class(/* connection params */) extends Quibble\Postgresql\Adapter
 
 ```
 
-To create a Query Builder, call one of the static methods the trait adds. Their
-only parameter is the base table name you want to query from:
+To create a Query Builder, call one of the convenience methods the trait adds.
+Their only parameter is the base table name you want your query to operate on:
 
 ```php
 <?php
 
-$query = $adapter::selectFrom('foo');
+$query = $adapter->selectFrom('foo');
 
 ```
 
@@ -44,6 +44,18 @@ You can also directly instantiate one of the `Query` SQL classes, e.g.:
 <?php
 
 $query = new Quibble\Query\Select($pdo, $tableName);
+```
+
+## Selecting from more than one table
+Use the `andFrom` method:
+
+```php
+<?php
+
+$query = $adapter->selectFrom('foo')
+    ->andFrom('bar');
+// SELECT * FROM foo, bar
+
 ```
 
 ## Joining
@@ -380,8 +392,9 @@ columns may have the JSONB type in which case it would be nice to automatically
 convert them from and to JSON. This is where _transformers_ and _serializers_
 come in.
 
-By default, when binding parameters each one is inspected and, if it is actually
-a class, it is `__toString()`ed.
+By default, all parameters will be `__toString()`'d by PDO on binding
+`(PDO::PARAM_STR)`. when binding parameters each one is inspected and, if it is actually
+an instance of `Quibble\Dabble\Raw, it is `__toString()`ed.
 
 
 Any field passed as a binding for any statement type may be decorated in a
