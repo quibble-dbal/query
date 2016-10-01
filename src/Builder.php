@@ -38,15 +38,12 @@ abstract class Builder
      *
      * @param PDO $adapter The database connection.
      * @param string $table The base table to work on. A `Select` query can add
-     *  more tables using `andFrom`.
+     *  more tables using `andFrom` or one of the `joinNNN` methods.
      */
-    public function __construct(PDO $adapter, $table)
+    public function __construct(PDO $adapter, string $table)
     {
         $this->adapter = $adapter;
-        if (is_string($table)) {
-            $table = [$table];
-        }
-        $this->tables = $table;
+        $this->tables = [$table];
     }
 
     /**
@@ -63,21 +60,21 @@ abstract class Builder
      * Get the statement as it is currently built. Will use a cached version if
      * possible.
      *
-     * @param array $driver_params Optional driver-specific parameters.
+     * @param array $driver_options Optional driver-specific parameters.
      * @return PDOStatement|false On success, the statement. If error mode isn't
      *  set to PDO::ERRMODE_EXCEPTION, false on failure.
      * @throws Quibble\Query\SqlException if the statement could not be built
      *  and error mode is set to PDO::ERRMODE_EXCEPTION.
      * @see PDO::prepare
      */
-    public function getStatement($driver_params = null)
+    public function getStatement(array $driver_options = [])
     {
         $sql = $this->__toString();
         if (!isset($this->statements[$sql])) {
             try {
                 $this->statements[$sql] = $this->adapter->prepare(
                     $sql,
-                    $driver_params
+                    $driver_options
                 );
                 if (!$this->statements[$sql]) {
                     unset($this->statements[$sql]);
@@ -97,20 +94,20 @@ abstract class Builder
     /**
      * Get the executed statement.
      *
-     * @param array $driver_params Optional driver-specific parameters.
+     * @param array $driver_options Optional driver-specific parameters.
      * @return PDOStatement|false On success, the statement. If error mode isn't
      *  set to PDO::ERRMODE_EXCEPTION, false on failure.
      * @throws Quibble\Query\SqlException if the statement could not be built
      *  and error mode is set to PDO::ERRMODE_EXCEPTION.
      * @see Quibble\Query\Builder::getStatement
      */
-    public function getExecutedStatement($driver_params = null)
+    public function getExecutedStatement(array $driver_options = [])
     {
-        $stmt = $this->getStatement();
+        $stmt = $this->getStatement($driver_options);
         if (!$stmt) {
             return false;
         }
-        $stmt->execute($this->getBindings());
+        $this->applyBindings($stmt)->execute();
         return $stmt;
     }
 
