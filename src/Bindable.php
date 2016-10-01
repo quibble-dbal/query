@@ -2,6 +2,9 @@
 
 namespace Quibble\Query;
 
+use PDO;
+use PDOStatement;
+
 trait Bindable
 {
     /**
@@ -58,6 +61,28 @@ trait Bindable
         }
         $sql = implode('', $parts);
         return $sql;
+    }
+
+    /**
+     * Internal helper to apply bindings using the correct PDO::PARAM_xxx type.
+     *
+     * @param PDOStatement The statement to apply the bindings to.
+     * @return PDOStatement The PDOStatement ready for execution.
+     */
+    protected function applyBindings(PDOStatement $stmt) : PDOStatement
+    {
+        $bindings = $this->getBindings();
+        foreach ($bindings as $key => $value) {
+            $pdokey = $key + 1;
+            if (is_null($value)) {
+                $stmt->bindValue($pdokey, $value, PDO::PARAM_NULL);
+            } elseif (is_bool($value)) {
+                $stmt->bindValue($pdokey, $value, PDO::PARAM_BOOL);
+            } else {
+                $stmt->bindValue($pdokey, $value, PDO::PARAM_STR);
+            }
+        }
+        return $stmt;
     }
 }
 
