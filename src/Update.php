@@ -9,32 +9,33 @@ class Update extends Builder
 {
     use Where;
 
-    private $values = [];
-
-    public function __construct(PDO $adapter, $table, array $init = [])
+    public function __construct(PDO $adapter, $table)
     {
         if (is_array($table)) {
             $table = array_shift($table);
         }
-        parent::__construct($adapter, $table, $init);
+        parent::__construct($adapter, $table);
     }
 
     public function execute(array $set) : bool
     {
         $error = false;
         $errmode = $this->adapter->getAttribute(PDO::ATTR_ERRMODE);
-        $this->bindables = array_merge($set, $this->bindables);
+        $this->bindables['values'] = $set;
         $result = false;
         try {
             $stmt = $this->getStatement();
-            $result = $stmt->execute(array_values($this->bindables));
+            if (!$stmt) {
+                return false;
+            }
+            $result = $stmt->execute($this->getBindings());
             if ($affectedRows = $stmt->rowCount() and $affectedRows) {
                 return true;
             }
             if ($errmode == PDO::ERRMODE_EXCEPTION) {
                 $info = $stmt->errorInfo();
                 $msg = "{$info[0]} / {$info[1]}: {$info[2]} - $this ("
-                    .implode(', ', $this->bindables).")";
+                    .implode(', ', $this->getBindings()).")";
                 throw new UpdateException($msg);
             } else {
                 return false;
@@ -62,7 +63,7 @@ class Update extends Builder
     public function __toString() : string
     {
         $modifiers = [];
-        foreach (array_keys($this->bindables) as $field) {
+        foreach (array_keys($this->bindables['values']) as $field) {
             if (!is_numeric($field)) {
                 $modifiers[] = "$field = ?";
             }
