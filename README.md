@@ -382,109 +382,8 @@ unexpected results as the Query classes consistently look towards the statement
 to determine this setting. Having said that, in 20+ years of programming I've
 personally never felt the need to override this on a per-query basis.
 
-## Transforming and serializing sets
-PDO is relatively "dumb" when it comes to input/output formatting. When binding
-values to a statement, a `Query` makes sure booleans are booleans, null is null
-and everything else is bound as a string (unless it's an instance of
-`Dabble\Raw` of course in which case it's passed verbatim). Obviously in the
-real world, life is slightly more complex. E.g. when using PostgreSQL, certain
-columns may have the JSONB type in which case it would be nice to automatically
-convert them from and to JSON. This is where _transformers_ and _serializers_
-come in.
-
-By default, all parameters will be `__toString()`'d by PDO on binding
-`(PDO::PARAM_STR)`. when binding parameters each one is inspected and, if it is actually
-an instance of `Quibble\Dabble\Raw, it is `__toString()`ed.
-
-
-Any field passed as a binding for any statement type may be decorated in a
-class. The only prerequisite is that this class has to `__toString()` method
-which renders the field suitable for usage in SQL. E.g., for date fields one
-could do this:
-
-```php
-<?php
-
-$result = $pdo::insertInto('foo', ['date' => new Carbon\Carbon('+1 day')]);
-```
-
-For the converse (during selects), call the `addDecorator` method on the
-`Select` builder. It takes two arguments: the name of the field, and the
-classname to decorate with. It is assumed that the first parameter to its
-constructor will be the value; any additional arguments are passed as
-constructor arguments. Example:
-
-```php
-<?php
-
-$query = $pdo::selectFrom('foo')
-    // bar contains a date:
-    ->addDecorator('bar', Carbon\Carbon::class);
-
-$result = $query->fetch();
-get_class($result['bar']); // Carbon\Carbon
-
-```
-
-The Quibble\Dabble package contains a generic decorator `Raw` allowing you to
-pass in arbitray SQL without any escaping. If you for whatever reason have a
-custom decorator you need to inject verbatim, either have it extend `Raw` or
-simply wrap it in one:
-
-```php
-<?php
-
-use Quibble\Dabble\Raw;
-
-class MyDecorator
-{
-    private $value = '';
-
-    public function __construct($value)
-    {
-        $this->value = $value;
-    }
-
-    public function __toString()
-    {
-        return $this->value.'()';
-    }
-}
-
-$pdo::insertInto('foo', ['bar' => new Raw(new MyDecorator('bar'))]);
-// Results in:
-// INSERT INTO foo (bar) VALUES (bar());
-// (Obviously this would only work if you actually have a function named bar()
-// in your database.)
-
-```
-
-Note that `addDecorator` can be chained like all other methods.
-
-Instead of a fieldname/classname pair, you can also pass a _callable_ as a
-single argument. This will be called for every field used with the fieldname
-and -value as its arguments. This allows you to dynamically decorate fields that
-e.g. "quack like a duck" or contain certain characters in their name that you
-know are "special markers" in your database schema (e.g. the string `date`).
-
-The callable should return the value (be it either modified or not).
-
-A third way to call `addDecorator` is with fieldname/callable arguments. For the
-specified fieldname, the value will simply be run through the callable. It
-expects a single argument (the value) and should return the modified value.
-E.g.:
-
-```php
-<?php
-
-$query->addDecorator('boolean_field', function ($value) {
-    return (bool)$value;
-});
-
-```
-
 ## Accessing the raw statement
-All Query classes offer a `getStatement()` method which returns the prepared
+All Query classes offer a `getStatement` method which returns the prepared
 statement. This could come in useful if you need to do something really evil,
 or simply if you need to pass `$driver_options` to `prepare`. The options are
 the parameter to `getStatement` and are passed verbatim (the SQL is injected for
@@ -493,7 +392,7 @@ you).
 Note that modifying the Query object after calling `getStatement` obviously
 won't modify its previous return value.
 
-Additionally, the Query classes also provide a `getExecutedStatement` which
+Additionally, the Query classes also provide `getExecutedStatement` which
 returns the current statement after being executed with the current bindings.
 This would allow you to call more low-level methods on an already executed
 statement (e.g. `getColumnMeta`).
