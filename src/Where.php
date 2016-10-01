@@ -8,8 +8,10 @@ trait Where
 
     public function where($sql, ...$bindables) : Builder
     {
+        if ($bindables) {
+            $sql = $this->appendBindings('where', $sql, $bindables);
+        }
         $this->wheres[] = $sql;
-        $this->bindables = array_merge($this->bindables, $bindables);
         return $this;
     }
     
@@ -34,17 +36,13 @@ trait Where
         $sql = "$field IN (";
         $sql .= implode(', ', array_fill(0, count($values), '?'));
         $sql .= ')';
-        $this->bindables = array_merge($this->bindables, array_values($values));
+        $sql = $this->appendBindings('where', $sql, array_values($values));
         return $sql;
     }
 
     public function notIn($field, array $values) : string
     {
-        $sql = "$field NOT IN (";
-        $sql .= implode(', ', array_fill(0, count($values), '?'));
-        $sql .= ')';
-        $this->bindables = array_merge($this->bindables, array_values($values));
-        return $sql;
+        return $this->in("$field NOT", $values);
     }
 }
 
