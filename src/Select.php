@@ -11,17 +11,16 @@ class Select extends Builder
     use Where;
     use Limit;
 
-    private $decorators = [];
     protected $fields = ['*'];
     protected $group = null;
     protected $havings = null;
     protected $order = null;
     protected $unions = [];
+    protected $driverOptions = [];
 
-    public function addDecorator($field, $class, ...$ctor_args) : Builder
+    public function setDriverOptions(array $driver_options = [])
     {
-        $this->decorators[$field] = compact('class', 'ctor_args');
-        return $this;
+        $this->driverOptions = $driver_options;
     }
 
     public function andFrom($table) : Builder
@@ -124,10 +123,12 @@ class Select extends Builder
     public function fetch(...$args)
     {
         $errmode = $this->adapter->getAttribute(PDO::ATTR_ERRMODE);
-        if ((false !== ($stmt = $this->getExecutedStatement()))
-            and (false !== ($result = $stmt->fetch(...$args)))
-        ) {
-            return $this->applyDecorators($result);
+        $stmt = $this->getExecutedStatement($this->driverOptions);
+        if (!$stmt) {
+            return false;
+        }
+        if (false !== ($result = $stmt->fetch(...$args))) {
+            return $result;
         } elseif ($errmode == PDO::ERRMODE_EXCEPTION) {
             throw new SelectException("$this (".implode(', ', $this->getBindings()).")");
         } else {
@@ -139,11 +140,12 @@ class Select extends Builder
     {
         $errmode = $this->adapter->getAttribute(PDO::ATTR_ERRMODE);
         $result = false;
-        if ((false !== ($stmt = $this->getExecutedStatement()))
-            and (false !== ($result = $stmt->fetchAll(...$args)))
-            and $result
-        ) {
-            return array_map([$this, 'applyDecorators'], $result);
+        $stmt = $this->getExecutedStatement($this->driverOptions);
+        if (!$stmt) {
+            return false;
+        }
+        if ((false !== ($result = $stmt->fetchAll(...$args))) and $result) {
+            return $result;
         } elseif ($errmode == PDO::ERRMODE_EXCEPTION) {
             throw new SelectException("$this (".implode(', ', $this->getBindings()).")");
         } else {
@@ -153,23 +155,22 @@ class Select extends Builder
 
     public function fetchColumn(int $column_number = 0, $field = null)
     {
-        if (false === ($stmt = $this->getExecutedStatement())) {
+        $stmt = $this->getExecutedStatement();
+        if (!$stmt) {
             return false;
         }
-        $column = $stmt->fetchColumn($column_number);
-        if (isset($field)) {
-            $this->applyDecorator($column, $field);
-        }
-        return $column;
+        return $stmt->fetchColumn($column_number);
     }
 
     public function fetchObject($class_name = 'stdClass', array $ctor_args = [])
     {
         $errmode = $this->adapter->getAttribute(PDO::ATTR_ERRMODE);
-        if ((false !== ($stmt = $this->getExecutedStatement()))
-            and (false !== ($result = $stmt->fetchObject($class_name, $ctor_args)))
-        ) {
-            return $this->applyDecorators($result);
+        $stmt = $this->getExecutedStatement();
+        if (!$stmt) {
+            return false;
+        }
+        if (false !== ($result = $stmt->fetchObject($class_name, $ctor_args))) {
+            return $result;
         } elseif ($errmode == PDO::ERRMODE_EXCEPTION) {
             throw new SelectException("$this (".implode(', ', $this->getBindings()).")");
         } else {
@@ -185,28 +186,11 @@ class Select extends Builder
     public function generate(...$args) : Generator
     {
         $stmt = $this->getExecutedStatement();
-        while (false !== ($row = $stmt->fetch(...$args))) {
-            yield $this->applyDecorators($row);
+        if (!$stmt) {
+            return false;
         }
-    }
-
-    private function applyDecorators($row)
-    {
-        array_walk($row, [$this, 'applyDecorator']);
-        return $row;
-    }
-
-    private function applyDecorator(&$value, string $field)
-    {
-        foreach ($this->decorators as $name => $decorator) {
-            if (is_callable($name)) {
-                $value = $name($value);
-            }
-            if ($name == $field) {
-                extract($decorator);
-                array_unshift($ctor_args, $value);
-                $value = new $class(...$ctor_args);
-            }
+        while (false !== ($row = $stmt->fetch(...$args))) {
+            yield $row;
         }
     }
 }
