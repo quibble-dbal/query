@@ -59,6 +59,12 @@ $query->join('bar USING(baz)', 'LEFT');
 The second parameter is the join-style. If omitted defaults to a straight join.
 If you join contains placeholders, add them as subsequent parameters.
 
+> The Query builder does not support, anywhere you can pass bindings for
+> placeholders, the use of named parameters. _Always_ use question marks. Named
+> parameters are handy when manually constructing a large blob of SQL with many
+> of them, but using the query builder you typically only pass one or two
+> bindings per method call so it is not needed to support this.
+
 Shorthands:
 
 ```php
@@ -73,6 +79,10 @@ $query->leftJoin('bar1 USING(baz1)')
 
 Again, any subsequent parameters are bindings to placeholders.
 
+## Subqueries
+If any bindable is itself a `Select` query builder, it becomes a _subquery_ and
+the associated bindings are "hoisted" to the parent query.
+
 ## Choosing which fields to select
 The default is to select `*` so if that's what you want you don't need to
 specify anything. To fine-tune, use the `select` method:
@@ -80,12 +90,12 @@ specify anything. To fine-tune, use the `select` method:
 ```php
 <?php
 
-$query->select('foo', ['bar', 'baz AS buzz']);
+$query->select('foo', 'bar', 'baz AS buzz');
 
 ```
 
-`select` takes an arbitrary number of arguments which may be either strings
-or arrays of strings. Hence, the above example would translate to:
+`select` takes an arbitrary number of arguments representing the fields you wish
+to select in your query. Hence, the above example would translate to:
 
 ```sql
 SELECT foo, bar, baz AS buzz FROM ...
@@ -93,7 +103,17 @@ SELECT foo, bar, baz AS buzz FROM ...
 
 Note that if `select` is called multiple times, all fields are _appended_ to
 the query. The only exception if when it detects the fields were in a "pristine"
-state (i.e. `*`) in which case it acts as an override.
+state (i.e. `*`) in which case it acts as an override. So if mid-construction
+you need to reset your fields you can do it like so:
+
+```php
+<?php
+
+$query->select('foo', 'bar');
+// oops...
+$query->select('*')->select('baz');
+
+```
 
 ## Adding WHERE clauses
 ```php
@@ -125,14 +145,26 @@ $query->where('foo = ? AND (bar = ? OR bar = ?)', $foo, $bar1, $bar2);
 
 `where` and `orWhere` take as many arguments as is needed to build the clause.
 Note that it does not check for validity; supplying the correct number of
-arguments is up to the programmer. You can also use `:paramName` style argument
-injection. In that case, pass the arguments as a key/value hash with
-corresponding key names (this may be a single hash or a hash-per-parameter):
+arguments is up to the programmer.
+
+## Grouping complex WHEREs
+If your WHERE clause gets really complicated, you can also pass a callable to
+any of the `where` functions instead of a string of SQL. This will be invoked
+with a single argument of the type `Quibble\Query\Group`. This object implements
+a subset of the query builder (to be precise, the methods of the `Where` trait)
+and allows you to nest conditions:
 
 ```php
 <?php
 
-$query->where('foo = :foo AND bar = :bar', compact('foo', 'bar'));
+$query->where('bar = ?')
+    ->orWhere(function ($query) {
+        $query->where('baz = ?', 2)
+            ->where('buh = ?', 3);
+    });
+});
+
+// SELECT * FROM some_table WHERE 
 
 ```
 
