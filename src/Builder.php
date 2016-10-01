@@ -3,6 +3,7 @@
 namespace Quibble\Query;
 
 use Quibble\Dabble\SqlException;
+use Quibble\Dabble\Raw;
 use PDO;
 use PDOStatement;
 use PDOException;
@@ -30,7 +31,7 @@ abstract class Builder
      *
      * @var array
      */
-    protected $bindables = ['values' => [], 'where' => [], 'options' => []];
+    protected $bindables = ['values' => [], 'where' => [], 'having' => []];
 
     /**
      * Hash of cached statements.
@@ -63,11 +64,36 @@ abstract class Builder
      */
     public function getBindings() : array
     {
-        return array_merge(
+        return array_values(array_merge(
             $this->bindables['values'],
             $this->bindables['where'],
-            $this->bindables['options']
-        );
+            $this->bindables['having']
+        ));
+    }
+
+    /**
+     * Internal helper to append bindings to the correct subkey. This also
+     * replaces any binding where the value is an instance of Quibble\Dabble\Raw
+     * with its raw, `__toString()`'d value.
+     *
+     * @param string $key The subkey to bind to.
+     * @param string $sql The SQL snippet we want to bind to.
+     * @param array $bindables An array of bindables.
+     * @return string The modified SQL.
+     */
+    protected function appendBindings(string $key, string $sql, array $bindables) : string
+    {
+        $parts = explode('?', $sql);
+        foreach (array_values($bindables) as $i => $bindable) {
+            if ($bindable instanceof Raw) {
+                $parts[$i] .= "$bindable";
+            } else {
+                $parts[$i] .= '?';
+                $this->bindables[$key][] = $bindable;
+            }
+        }
+        $sql = implode('', $parts);
+        return $sql;
     }
 
     /**
@@ -91,7 +117,7 @@ abstract class Builder
      *  and error mode is set to PDO::ERRMODE_EXCEPTION.
      * @see PDO::prepare
      */
-    public function getStatement($driver_params = null) : PDOStatement
+    public function getStatement($driver_params = null)
     {
         $sql = $this->__toString();
         if (!isset($this->statements[$sql])) {
@@ -125,9 +151,12 @@ abstract class Builder
      *  and error mode is set to PDO::ERRMODE_EXCEPTION.
      * @see Quibble\Query\Builder::getStatement
      */
-    public function getExecutedStatement($driver_params = null) : PDOStatement
+    public function getExecutedStatement($driver_params = null)
     {
         $stmt = $this->getStatement();
+        if (!$stmt) {
+            return false;
+        }
         $stmt->execute($this->getBindings());
         return $stmt;
     }
