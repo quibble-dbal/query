@@ -24,13 +24,16 @@ class Select extends Builder
         return $this;
     }
 
+    public function andFrom($table) : Builder
+    {
+        $this->tables[] = ", $table";
+        return $this;
+    }
+
     public function join($table, $style = '', ...$bindables) : Builder
     {
         $table = $this->appendBindings('join', $table, $bindables);
-        $this->tables = array_merge(
-            $this->tables,
-            [sprintf('%s JOIN %s', $style, $table)]
-        );
+        $this->tables[] = sprintf('%s JOIN %s', $style, $table);
         return $this;
     }
 
@@ -71,6 +74,9 @@ class Select extends Builder
         if ($this->fields == ['*']) {
             $this->fields = $fields;
         } else {
+            if (count($this->fields) == 1 && $this->fields[0] == '*') {
+                $this->fields = [];
+            }
             $this->fields = array_unique(array_merge($this->fields, $fields));
         }
         return $this;
