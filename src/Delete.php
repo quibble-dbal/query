@@ -9,14 +9,12 @@ class Delete extends Builder
 {
     use Where;
 
-    private $values = [];
-
-    public function __construct(PDO $adapter, $table, array $init = [])
+    public function __construct(PDO $adapter, $table)
     {
         if (is_array($table)) {
             $table = array_shift($table);
         }
-        parent::__construct($adapter, $table, $init);
+        parent::__construct($adapter, $table);
     }
 
     public function execute() : bool
@@ -26,21 +24,24 @@ class Delete extends Builder
         $result = false;
         try {
             $stmt = $this->getStatement();
-            $result = $stmt->execute(array_values($this->bindables));
+            if (!$stmt) {
+                return false;
+            }
+            $result = $stmt->execute($this->getBindings());
             if ($affectedRows = $stmt->rowCount() and $affectedRows) {
                 return true;
             }
             if ($errmode == PDO::ERRMODE_EXCEPTION) {
                 $info = $stmt->errorInfo();
                 $msg = "{$info[0]} / {$info[1]}: {$info[2]} - $this ("
-                    .implode(', ', $this->bindables).")";
+                    .implode(', ', $this->getBindings()).")";
                 throw new DeleteException($msg);
             } else {
                 return false;
             }
         } catch (PDOException $e) {
             $error = new DeleteException(
-                "$this (".implode(', ', $this->bindables).")",
+                "$this (".implode(', ', $this->getBindings()).")",
                 null,
                 $e
             );
