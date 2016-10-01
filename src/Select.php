@@ -15,7 +15,7 @@ class Select extends Builder
     protected $fields = ['*'];
     protected $group = null;
     protected $havings = null;
-    protected $orders = [];
+    protected $order = null;
     protected $unions = [];
 
     public function addDecorator($field, $class, ...$ctor_args) : Builder
@@ -26,11 +26,11 @@ class Select extends Builder
 
     public function join($table, $style = '', ...$bindables) : Builder
     {
+        $table = $this->appendBindings('join', $table, $bindables);
         $this->tables = array_merge(
             $this->tables,
             [sprintf('%s JOIN %s', $style, $table)]
         );
-        $this->bindables = array_merge($this->bindables, $bindables);
         return $this;
     }
 
@@ -56,7 +56,7 @@ class Select extends Builder
 
     public function orderBy($sql) : Builder
     {
-        $this->orders[] = $sql;
+        $this->order = $sql;
         return $this;
     }
 
@@ -78,8 +78,7 @@ class Select extends Builder
 
     public function having($sql, ...$bindables) : Builder
     {
-        $this->havings = $sql;
-        $this->bindables = array_merge($this->bindables, $bindables);
+        $this->havings = $this->appendBindings('having', $sql, $bindables);
         return $this;
     }
 
@@ -102,7 +101,7 @@ class Select extends Builder
             $this->wheres ? ' WHERE '.implode(' ', $this->wheres) : '',
             $this->group ? ' GROUP BY '.$this->group : '',
             ($this->group && $this->havings) ? " HAVING {$this->havings} " : '',
-            $this->orders ? ' ORDER BY '.implode(', ', $this->orders) : '',
+            $this->order ? ' ORDER BY '.$this->order : '',
             isset($this->limit) ? sprintf(' LIMIT %d', $this->limit) : '',
             isset($this->offset) ? sprintf(' OFFSET %d', $this->offset) : ''
         );
@@ -110,10 +109,7 @@ class Select extends Builder
             foreach ($this->unions as $union) {
                 extract($union);
                 $sql .= " UNION $style $query";
-                $this->bindables = array_merge(
-                    $this->bindables,
-                    $query->getBindings()
-                );
+                $this->appendBindings('having', $sql, $query->getBindings());
             }
         }
         return $sql;
@@ -122,11 +118,12 @@ class Select extends Builder
     public function fetch(...$args)
     {
         $errmode = $this->adapter->getAttribute(PDO::ATTR_ERRMODE);
-        $stmt = $this->getExecutedStatement();
-        if (false !== ($result = $stmt->fetch(...$args))) {
+        if ((false !== ($stmt = $this->getExecutedStatement()))
+            and (false !== ($result = $stmt->fetch(...$args)))
+        ) {
             return $this->applyDecorators($result);
         } elseif ($errmode == PDO::ERRMODE_EXCEPTION) {
-            throw new SelectException("$this (".implode(', ', $this->bindables).")");
+            throw new SelectException("$this (".implode(', ', $this->getBindings()).")");
         } else {
             return false;
         }
@@ -135,11 +132,14 @@ class Select extends Builder
     public function fetchAll(...$args)
     {
         $errmode = $this->adapter->getAttribute(PDO::ATTR_ERRMODE);
-        $stmt = $this->getExecutedStatement();
-        if (false !== ($result = $stmt->fetchAll(...$args)) and $result) {
+        $result = false;
+        if ((false !== ($stmt = $this->getExecutedStatement()))
+            and (false !== ($result = $stmt->fetchAll(...$args)))
+            and $result
+        ) {
             return array_map([$this, 'applyDecorators'], $result);
         } elseif ($errmode == PDO::ERRMODE_EXCEPTION) {
-            throw new SelectException("$this (".implode(', ', $this->bindables).")");
+            throw new SelectException("$this (".implode(', ', $this->getBindings()).")");
         } else {
             return $result;
         }
@@ -147,7 +147,9 @@ class Select extends Builder
 
     public function fetchColumn(int $column_number = 0, $field = null)
     {
-        $stmt = $this->getExecutedStatement();
+        if (false === ($stmt = $this->getExecutedStatement())) {
+            return false;
+        }
         $column = $stmt->fetchColumn($column_number);
         if (isset($field)) {
             $this->applyDecorator($column, $field);
@@ -158,11 +160,12 @@ class Select extends Builder
     public function fetchObject($class_name = 'stdClass', array $ctor_args = [])
     {
         $errmode = $this->adapter->getAttribute(PDO::ATTR_ERRMODE);
-        $stmt = $this->getExecutedStatement();
-        if (false !== ($result = $stmt->fetchObject($class_name, $ctor_args))) {
+        if ((false !== ($stmt = $this->getExecutedStatement()))
+            and (false !== ($result = $stmt->fetchObject($class_name, $ctor_args)))
+        ) {
             return $this->applyDecorators($result);
         } elseif ($errmode == PDO::ERRMODE_EXCEPTION) {
-            throw new SelectException("$this (".implode(', ', $this->bindables).")");
+            throw new SelectException("$this (".implode(', ', $this->getBindings()).")");
         } else {
             return false;
         }
