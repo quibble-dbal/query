@@ -167,6 +167,28 @@ $query->limit(10, 5);
 
 ```
 
+## Grouping
+A `Select` query can have a single `GROUP BY` clause added (i.e., if you call it
+multiple times it will be overwritten). Use the `groupBy` method:
+
+```php
+<?php
+
+$query->groupBy('foo, bar');
+
+```
+
+In conjunction, there is also a `having` method which accepts bindable
+additional parameters:
+
+```php
+<?php
+
+$query->groupBy('foo, bar')
+    ->having('bar > ?', 42);
+
+```
+
 ## Unions
 The `union` method accepts _another_ `Select` object to use for the union. It
 will show default error handling (see below) if the selected fields are
@@ -210,28 +232,6 @@ $query->where($query->in('field', $arrayOfPossibleValues));
 Similarly, there's a `notIn` method. These methods return _strings_ so you can
 directly pass them to `where`. The bindings are automatically added to the query
 object, so generally you'll use them in conjunction as in the above example.
-
-## GROUPing queries
-A `Select` query can have a single `GROUP BY` clause added (i.e., if you call it
-multiple times it will be overwritten). Use the `groupBy` method:
-
-```php
-<?php
-
-$query->groupBy('foo, bar');
-
-```
-
-In conjunction, there is also a `having` method which accepts bindable
-additional parameters:
-
-```php
-<?php
-
-$query->groupBy('foo, bar')
-    ->having('bar > ?', 42);
-
-```
 
 ## Fetching the data
 Eventually, you're done building your query and will want data. Just use any
@@ -338,7 +338,20 @@ unexpected results as the Query classes consistently look towards the statement
 to determine this setting. Having said that, in 20+ years of programming I've
 personally never felt the need to override this on a per-query basis.
 
-## Decorating fields
+## Transforming and serializing sets
+PDO is relatively "dumb" when it comes to input/output formatting. When binding
+values to a statement, a `Query` makes sure booleans are booleans, null is null
+and everything else is bound as a string (unless it's an instance of
+`Dabble\Raw` of course in which case it's passed verbatim). Obviously in the
+real world, life is slightly more complex. E.g. when using PostgreSQL, certain
+columns may have the JSONB type in which case it would be nice to automatically
+convert them from and to JSON. This is where _transformers_ and _serializers_
+come in.
+
+By default, when binding parameters each one is inspected and, if it is actually
+a class, it is `__toString()`ed.
+
+
 Any field passed as a binding for any statement type may be decorated in a
 class. The only prerequisite is that this class has to `__toString()` method
 which renders the field suitable for usage in SQL. E.g., for date fields one
