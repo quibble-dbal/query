@@ -14,12 +14,12 @@ class Group extends Builder
         return implode(' ', $this->wheres);
     }
 
-    public function getStatement($driver_params = null)
+    public function getStatement(array $driver_options = [])
     {
         throw new DomainException("Cannot get a statement for a group.");
     }
 
-    public function getExecutedStatement($driver_params = null)
+    public function getExecutedStatement(array $driver_options = [])
     {
         throw new DomainException("Cannot get a statement for a group.");
     }
