@@ -10,6 +10,8 @@ use PDOException;
 
 abstract class Builder
 {
+    use Bindable;
+
     /**
      * An instance of a PDO resource.
      *
@@ -23,15 +25,6 @@ abstract class Builder
      * @var array
      */
     protected $tables = [];
-
-    /**
-     * A hash of bindables. Internally we store each query part in subarrays so
-     * we can later bind in the right order and it doesn't matter in which order
-     * the building methods are called.
-     *
-     * @var array
-     */
-    protected $bindables = ['values' => [], 'where' => [], 'having' => []];
 
     /**
      * Hash of cached statements.
@@ -54,46 +47,6 @@ abstract class Builder
             $table = [$table];
         }
         $this->tables = $table;
-    }
-
-    /**
-     * Returns a flattened array of bindings. This makes an educated attempt to
-     * order the bindings correctly.
-     *
-     * @return array
-     */
-    public function getBindings() : array
-    {
-        return array_values(array_merge(
-            $this->bindables['values'],
-            $this->bindables['where'],
-            $this->bindables['having']
-        ));
-    }
-
-    /**
-     * Internal helper to append bindings to the correct subkey. This also
-     * replaces any binding where the value is an instance of Quibble\Dabble\Raw
-     * with its raw, `__toString()`'d value.
-     *
-     * @param string $key The subkey to bind to.
-     * @param string $sql The SQL snippet we want to bind to.
-     * @param array $bindables An array of bindables.
-     * @return string The modified SQL.
-     */
-    protected function appendBindings(string $key, string $sql, array $bindables) : string
-    {
-        $parts = explode('?', $sql);
-        foreach (array_values($bindables) as $i => $bindable) {
-            if ($bindable instanceof Raw) {
-                $parts[$i] .= "$bindable";
-            } else {
-                $parts[$i] .= '?';
-                $this->bindables[$key][] = $bindable;
-            }
-        }
-        $sql = implode('', $parts);
-        return $sql;
     }
 
     /**
