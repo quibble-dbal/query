@@ -91,5 +91,36 @@ EOT
         $result = $query->where($query->in('id', [1, 2]))->fetchAll();
         yield assert(count($result) == 2);
     }
+
+    /**
+     * If a bindable is itself a Select query it becomes a subquery {?}.
+     */
+    public function subQuery()
+    {
+        $query = new Select($this->pdo, 'test');
+        $subquery = new Select($this->pdo, 'test2');
+        $subquery->where('bar = ?', 'bar')
+            ->orWhere('bar = ?', 'baz')
+            ->select('bar');
+        $query->where('foo IN (?)', $subquery);
+        $result = $query->fetchAll();
+        yield assert(count($result) == 2);
+    }
+
+    /**
+     * If the SQL part of a WHERE call is itself callable, it becomes a grouping
+     * function/object {?}.
+     */
+    public function groupedWhere()
+    {
+        $query = new Select($this->pdo, 'test');
+        $result = $query->where('id > ?', 1)
+            ->andWhere(function ($group) {
+                $group->where('foo', 'bar')
+                    ->orWhere('foo', 'baz');
+            })
+            ->fetchAll();
+        yield assert(count($result) == 1);
+    }
 }
 

@@ -3,6 +3,7 @@
 namespace Quibble\Tests;
 
 use Quibble\Sqlite\Adapter;
+use Quibble\Dabble\SqlException;
 use Quibble\Query\InsertException;
 use Quibble\Query\Buildable;
 use PDO;
@@ -58,9 +59,9 @@ EOT
         try {
             $this->pdo->insertInto('test2')
                 ->execute(['foo' => null]);
-        } catch (InsertException $e) {
+        } catch (SqlException $e) {
         }
-        yield assert($e instanceof InsertException);
+        yield assert($e instanceof SqlException);
     }
 }
 

@@ -3,72 +3,120 @@
 namespace Quibble\Query;
 
 use Quibble\Dabble\SqlException;
+use Quibble\Dabble\Raw;
 use PDO;
 use PDOStatement;
+use PDOException;
 
 abstract class Builder
 {
+    use Bindable;
+
+    /**
+     * An instance of a PDO resource.
+     *
+     * @var PDO
+     */
     protected $adapter;
+
+    /**
+     * An array of table(s) this query runs on.
+     *
+     * @var array
+     */
     protected $tables = [];
-    protected $bindables = [];
+
+    /**
+     * Hash of cached statements.
+     *
+     * @var array
+     */
     private $statements = [];
 
-    public function __construct(PDO $adapter, $table)
+    /**
+     * Construct a query builder.
+     *
+     * @param PDO $adapter The database connection.
+     * @param string $table The base table to work on. A `Select` query can add
+     *  more tables using `andFrom` or one of the `joinNNN` methods.
+     */
+    public function __construct(PDO $adapter, string $table)
     {
         $this->adapter = $adapter;
-        if (is_string($table)) {
-            $table = [$table];
-        }
-        $this->tables = $table;
+        $this->tables = [$table];
     }
 
-    public function getBindings() : array
-    {
-        return $this->bindables;
-    }
-
-    public function getSql() : string
+    /**
+     * Proxy to `__toString()` to offer an API consistent with similar packages.
+     *
+     * @return string
+     */
+    public function toSql() : string
     {
         return $this->__toString();
     }
 
-    public function getStatement($driver_params = null) : PDOStatement
+    /**
+     * Get the statement as it is currently built. Will use a cached version if
+     * possible.
+     *
+     * @param array $driver_options Optional driver-specific parameters.
+     * @return PDOStatement|false On success, the statement. If error mode isn't
+     *  set to PDO::ERRMODE_EXCEPTION, false on failure.
+     * @throws Quibble\Query\SqlException if the statement could not be built
+     *  and error mode is set to PDO::ERRMODE_EXCEPTION.
+     * @see PDO::prepare
+     */
+    public function getStatement(array $driver_options = [])
     {
         $sql = $this->__toString();
         if (!isset($this->statements[$sql])) {
-            $this->statements[$sql] = $this->adapter->prepare(
-                $sql,
-                $driver_params
-            );
-            if (!$this->statements[$sql]) {
-                unset($this->statements[$sql]);
-                throw new SqlException($this->__toString());
+            try {
+                $this->statements[$sql] = $this->adapter->prepare(
+                    $sql,
+                    $driver_options
+                );
+                if (!$this->statements[$sql]) {
+                    unset($this->statements[$sql]);
+                    return false;
+                }
+            } catch (PDOException $e) {
+                throw new SqlException(
+                    $this->__toString(),
+                    SqlException::PREPARATION,
+                    $e
+                );
             }
         }
         return $this->statements[$sql];
     }
 
-    public function getExecutedStatement($driver_params = null) : PDOStatement
+    /**
+     * Get the executed statement.
+     *
+     * @param array $driver_options Optional driver-specific parameters.
+     * @return PDOStatement|false On success, the statement. If error mode isn't
+     *  set to PDO::ERRMODE_EXCEPTION, false on failure.
+     * @throws Quibble\Query\SqlException if the statement could not be built
+     *  and error mode is set to PDO::ERRMODE_EXCEPTION.
+     * @see Quibble\Query\Builder::getStatement
+     */
+    public function getExecutedStatement(array $driver_options = [])
     {
-        $stmt = $this->getStatement($driver_params);
-        foreach (array_values($this->bindables) as $key => $value) {
-            if (is_null($value)) {
-                $stmt->bindValue($key + 1, $value, PDO::PARAM_NULL);
-            } elseif (is_bool($value)) {
-                $stmt->bindValue($key + 1, $value, PDO::PARAM_BOOL);
-            } else {
-                $stmt->bindValue($key + 1, $value, PDO::PARAM_STR);
-            }
+        $stmt = $this->getStatement($driver_options);
+        if (!$stmt) {
+            return false;
         }
-            try {
-        $stmt->execute();
-        } catch (\PDOException $e) {
-            var_dump($this->bindables, array_values($this->bindables));
-            var_dump($stmt); var_dump($e->getMEssage()); die();
-        }
+        $this->applyBindings($stmt)->execute();
         return $stmt;
     }
 
+    /**
+     * Queries must implement `__toString`. This simply returns the SQL as it
+     * should be passed to `PDO::prepare`.
+     *
+     * @return string
+     */
     abstract public function __toString() : string;
 }
 

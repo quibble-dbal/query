@@ -24,13 +24,13 @@ $adapter = new class(/* connection params */) extends Quibble\Postgresql\Adapter
 
 ```
 
-To create a Query Builder, call one of the static methods the trait adds. Their
-only parameter is the base table name you want to query from:
+To create a Query Builder, call one of the convenience methods the trait adds.
+Their only parameter is the base table name you want your query to operate on:
 
 ```php
 <?php
 
-$query = $adapter::selectFrom('foo');
+$query = $adapter->selectFrom('foo');
 
 ```
 
@@ -46,6 +46,18 @@ You can also directly instantiate one of the `Query` SQL classes, e.g.:
 $query = new Quibble\Query\Select($pdo, $tableName);
 ```
 
+## Selecting from more than one table
+Use the `andFrom` method:
+
+```php
+<?php
+
+$query = $adapter->selectFrom('foo')
+    ->andFrom('bar');
+// SELECT * FROM foo, bar
+
+```
+
 ## Joining
 Low-level:
 
@@ -58,6 +70,12 @@ $query->join('bar USING(baz)', 'LEFT');
 
 The second parameter is the join-style. If omitted defaults to a straight join.
 If you join contains placeholders, add them as subsequent parameters.
+
+> The Query builder does not support, anywhere you can pass bindings for
+> placeholders, the use of named parameters. _Always_ use question marks. Named
+> parameters are handy when manually constructing a large blob of SQL with many
+> of them, but using the query builder you typically only pass one or two
+> bindings per method call so it is not needed to support this.
 
 Shorthands:
 
@@ -73,6 +91,10 @@ $query->leftJoin('bar1 USING(baz1)')
 
 Again, any subsequent parameters are bindings to placeholders.
 
+## Subqueries
+If any bindable is itself a `Select` query builder, it becomes a _subquery_ and
+the associated bindings are "hoisted" to the parent query.
+
 ## Choosing which fields to select
 The default is to select `*` so if that's what you want you don't need to
 specify anything. To fine-tune, use the `select` method:
@@ -80,12 +102,12 @@ specify anything. To fine-tune, use the `select` method:
 ```php
 <?php
 
-$query->select('foo', ['bar', 'baz AS buzz']);
+$query->select('foo', 'bar', 'baz AS buzz');
 
 ```
 
-`select` takes an arbitrary number of arguments which may be either strings
-or arrays of strings. Hence, the above example would translate to:
+`select` takes an arbitrary number of arguments representing the fields you wish
+to select in your query. Hence, the above example would translate to:
 
 ```sql
 SELECT foo, bar, baz AS buzz FROM ...
@@ -93,7 +115,24 @@ SELECT foo, bar, baz AS buzz FROM ...
 
 Note that if `select` is called multiple times, all fields are _appended_ to
 the query. The only exception if when it detects the fields were in a "pristine"
-state (i.e. `*`) in which case it acts as an override.
+state (i.e. `*`) in which case it acts as an override. So if mid-construction
+you need to reset your fields you can do it like so:
+
+```php
+<?php
+
+$query->select('foo', 'bar');
+// oops...
+$query->select('*')->select('baz');
+
+```
+
+## Decorating fields
+A decorator class is anything that wraps a value and can be `__toString`'d. For
+bindings this is done automatically.
+
+To automatically wrap a _selected_ field in a decorator, take a look at the
+`quibble/transformer` package.
 
 ## Adding WHERE clauses
 ```php
@@ -125,14 +164,26 @@ $query->where('foo = ? AND (bar = ? OR bar = ?)', $foo, $bar1, $bar2);
 
 `where` and `orWhere` take as many arguments as is needed to build the clause.
 Note that it does not check for validity; supplying the correct number of
-arguments is up to the programmer. You can also use `:paramName` style argument
-injection. In that case, pass the arguments as a key/value hash with
-corresponding key names (this may be a single hash or a hash-per-parameter):
+arguments is up to the programmer.
+
+## Grouping complex WHEREs
+If your WHERE clause gets really complicated, you can also pass a callable to
+any of the `where` functions instead of a string of SQL. This will be invoked
+with a single argument of the type `Quibble\Query\Group`. This object implements
+a subset of the query builder (to be precise, the methods of the `Where` trait)
+and allows you to nest conditions:
 
 ```php
 <?php
 
-$query->where('foo = :foo AND bar = :bar', compact('foo', 'bar'));
+$query->where('bar = ?')
+    ->orWhere(function ($query) {
+        $query->where('baz = ?', 2)
+            ->where('buh = ?', 3);
+    });
+});
+
+// SELECT * FROM some_table WHERE 
 
 ```
 
@@ -164,6 +215,28 @@ just the offset.
 
 $query->limit(10, 5);
 // LIMIT 10 OFFSET 5
+
+```
+
+## Grouping
+A `Select` query can have a single `GROUP BY` clause added (i.e., if you call it
+multiple times it will be overwritten). Use the `groupBy` method:
+
+```php
+<?php
+
+$query->groupBy('foo, bar');
+
+```
+
+In conjunction, there is also a `having` method which accepts bindable
+additional parameters:
+
+```php
+<?php
+
+$query->groupBy('foo, bar')
+    ->having('bar > ?', 42);
 
 ```
 
@@ -210,28 +283,6 @@ $query->where($query->in('field', $arrayOfPossibleValues));
 Similarly, there's a `notIn` method. These methods return _strings_ so you can
 directly pass them to `where`. The bindings are automatically added to the query
 object, so generally you'll use them in conjunction as in the above example.
-
-## GROUPing queries
-A `Select` query can have a single `GROUP BY` clause added (i.e., if you call it
-multiple times it will be overwritten). Use the `groupBy` method:
-
-```php
-<?php
-
-$query->groupBy('foo, bar');
-
-```
-
-In conjunction, there is also a `having` method which accepts bindable
-additional parameters:
-
-```php
-<?php
-
-$query->groupBy('foo, bar')
-    ->having('bar > ?', 42);
-
-```
 
 ## Fetching the data
 Eventually, you're done building your query and will want data. Just use any
@@ -338,95 +389,8 @@ unexpected results as the Query classes consistently look towards the statement
 to determine this setting. Having said that, in 20+ years of programming I've
 personally never felt the need to override this on a per-query basis.
 
-## Decorating fields
-Any field passed as a binding for any statement type may be decorated in a
-class. The only prerequisite is that this class has to `__toString()` method
-which renders the field suitable for usage in SQL. E.g., for date fields one
-could do this:
-
-```php
-<?php
-
-$result = $pdo::insertInto('foo', ['date' => new Carbon\Carbon('+1 day')]);
-```
-
-For the converse (during selects), call the `addDecorator` method on the
-`Select` builder. It takes two arguments: the name of the field, and the
-classname to decorate with. It is assumed that the first parameter to its
-constructor will be the value; any additional arguments are passed as
-constructor arguments. Example:
-
-```php
-<?php
-
-$query = $pdo::selectFrom('foo')
-    // bar contains a date:
-    ->addDecorator('bar', Carbon\Carbon::class);
-
-$result = $query->fetch();
-get_class($result['bar']); // Carbon\Carbon
-
-```
-
-The Quibble\Dabble package contains a generic decorator `Raw` allowing you to
-pass in arbitray SQL without any escaping. If you for whatever reason have a
-custom decorator you need to inject verbatim, either have it extend `Raw` or
-simply wrap it in one:
-
-```php
-<?php
-
-use Quibble\Dabble\Raw;
-
-class MyDecorator
-{
-    private $value = '';
-
-    public function __construct($value)
-    {
-        $this->value = $value;
-    }
-
-    public function __toString()
-    {
-        return $this->value.'()';
-    }
-}
-
-$pdo::insertInto('foo', ['bar' => new Raw(new MyDecorator('bar'))]);
-// Results in:
-// INSERT INTO foo (bar) VALUES (bar());
-// (Obviously this would only work if you actually have a function named bar()
-// in your database.)
-
-```
-
-Note that `addDecorator` can be chained like all other methods.
-
-Instead of a fieldname/classname pair, you can also pass a _callable_ as a
-single argument. This will be called for every field used with the fieldname
-and -value as its arguments. This allows you to dynamically decorate fields that
-e.g. "quack like a duck" or contain certain characters in their name that you
-know are "special markers" in your database schema (e.g. the string `date`).
-
-The callable should return the value (be it either modified or not).
-
-A third way to call `addDecorator` is with fieldname/callable arguments. For the
-specified fieldname, the value will simply be run through the callable. It
-expects a single argument (the value) and should return the modified value.
-E.g.:
-
-```php
-<?php
-
-$query->addDecorator('boolean_field', function ($value) {
-    return (bool)$value;
-});
-
-```
-
 ## Accessing the raw statement
-All Query classes offer a `getStatement()` method which returns the prepared
+All Query classes offer a `getStatement` method which returns the prepared
 statement. This could come in useful if you need to do something really evil,
 or simply if you need to pass `$driver_options` to `prepare`. The options are
 the parameter to `getStatement` and are passed verbatim (the SQL is injected for
@@ -435,7 +399,7 @@ you).
 Note that modifying the Query object after calling `getStatement` obviously
 won't modify its previous return value.
 
-Additionally, the Query classes also provide a `getExecutedStatement` which
+Additionally, the Query classes also provide `getExecutedStatement` which
 returns the current statement after being executed with the current bindings.
 This would allow you to call more low-level methods on an already executed
 statement (e.g. `getColumnMeta`).

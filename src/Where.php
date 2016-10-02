@@ -8,8 +8,11 @@ trait Where
 
     public function where($sql, ...$bindables) : Builder
     {
+        $sql = $this->checkGroup($sql);
+        if ($bindables) {
+            $sql = $this->appendBindings('where', $sql, $bindables);
+        }
         $this->wheres[] = $sql;
-        $this->bindables = array_merge($this->bindables, $bindables);
         return $this;
     }
     
@@ -18,11 +21,13 @@ trait Where
         if (!$this->wheres) {
             return $this->where($sql, ...$bindables);
         }
+        $sql = $this->checkGroup($sql);
         return $this->where("AND ($sql)", ...$bindables);
     }
     
     public function orWhere($sql, ...$bindables) : Builder
     {
+        $sql = $this->checkGroup($sql);
         if ($this->wheres) {
             $sql = "OR ($sql)";
         }
@@ -34,16 +39,26 @@ trait Where
         $sql = "$field IN (";
         $sql .= implode(', ', array_fill(0, count($values), '?'));
         $sql .= ')';
-        $this->bindables = array_merge($this->bindables, array_values($values));
+        $sql = $this->appendBindings('where', $sql, array_values($values));
         return $sql;
     }
 
     public function notIn($field, array $values) : string
     {
-        $sql = "$field NOT IN (";
-        $sql .= implode(', ', array_fill(0, count($values), '?'));
-        $sql .= ')';
-        $this->bindables = array_merge($this->bindables, array_values($values));
+        return $this->in("$field NOT", $values);
+    }
+
+    protected function checkGroup($sql) : string
+    {
+        if (is_callable($sql)) {
+            $group = new Group($this->adapter, 'noop');
+            $sql($group);
+            $sql = $this->appendBindings(
+                'where',
+                "$group",
+                $group->getBindings()
+            );
+        }
         return $sql;
     }
 }
