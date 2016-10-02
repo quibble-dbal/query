@@ -127,6 +127,13 @@ $query->select('*')->select('baz');
 
 ```
 
+## Decorating fields
+A decorator class is anything that wraps a value and can be `__toString`'d. For
+bindings this is done automatically.
+
+To automatically wrap a _selected_ field in a decorator, take a look at the
+`quibble/transformer` package.
+
 ## Adding WHERE clauses
 ```php
 <?php
