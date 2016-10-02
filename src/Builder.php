@@ -31,7 +31,7 @@ abstract class Builder
      *
      * @var array
      */
-    private $statements = [];
+    protected static $statements = [];
 
     /**
      * Construct a query builder.
@@ -70,14 +70,14 @@ abstract class Builder
     public function getStatement(array $driver_options = [])
     {
         $sql = $this->__toString();
-        if (!isset($this->statements[$sql])) {
+        if (!isset(static::$statements[$sql])) {
             try {
-                $this->statements[$sql] = $this->adapter->prepare(
+                static::$statements[$sql] = $this->adapter->prepare(
                     $sql,
                     $driver_options
                 );
-                if (!$this->statements[$sql]) {
-                    unset($this->statements[$sql]);
+                if (!static::$statements[$sql]) {
+                    unset(static::$statements[$sql]);
                     return false;
                 }
             } catch (PDOException $e) {
@@ -88,7 +88,7 @@ abstract class Builder
                 );
             }
         }
-        return $this->statements[$sql];
+        return static::$statements[$sql];
     }
 
     /**
