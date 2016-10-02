@@ -31,7 +31,7 @@ abstract class Builder
      *
      * @var array
      */
-    private static $statements = [];
+    protected static $statements = [];
 
     /**
      * Construct a query builder.
