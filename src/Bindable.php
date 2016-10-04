@@ -4,6 +4,7 @@ namespace Quibble\Query;
 
 use PDO;
 use PDOStatement;
+use Quibble\Dabble\Raw;
 
 trait Bindable
 {
