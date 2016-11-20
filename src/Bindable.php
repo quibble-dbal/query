@@ -15,7 +15,7 @@ trait Bindable
      *
      * @var array
      */
-    protected $bindables = ['values' => [], 'where' => [], 'having' => []];
+    protected $bindables = ['values' => [], 'join' => [], 'where' => [], 'having' => []];
 
     /**
      * Returns a flattened array of bindings. This makes an educated attempt to
@@ -27,6 +27,7 @@ trait Bindable
     {
         return array_values(array_merge(
             $this->bindables['values'],
+            $this->bindables['join'],
             $this->bindables['where'],
             $this->bindables['having']
         ));
