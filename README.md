@@ -113,19 +113,8 @@ to select in your query. Hence, the above example would translate to:
 SELECT foo, bar, baz AS buzz FROM ...
 ```
 
-Note that if `select` is called multiple times, all fields are _appended_ to
-the query. The only exception if when it detects the fields were in a "pristine"
-state (i.e. `*`) in which case it acts as an override. So if mid-construction
-you need to reset your fields you can do it like so:
-
-```php
-<?php
-
-$query->select('foo', 'bar');
-// oops...
-$query->select('*')->select('baz');
-
-```
+Note that if `select` is called multiple times, only the last call specifies the
+fields to select. The default value is `"*"`.
 
 ## Decorating fields
 A decorator class is anything that wraps a value and can be `__toString`'d. For
