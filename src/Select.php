@@ -70,14 +70,7 @@ class Select extends Builder
 
     public function select(...$fields) : Builder
     {
-        if ($this->fields == ['*']) {
-            $this->fields = $fields;
-        } else {
-            if (count($this->fields) == 1 && $this->fields[0] == '*') {
-                $this->fields = [];
-            }
-            $this->fields = array_unique(array_merge($this->fields, $fields));
-        }
+        $this->fields = $fields;
         return $this;
     }
 
