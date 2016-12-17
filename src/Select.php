@@ -30,40 +30,39 @@ class Select extends Builder
         return $this;
     }
 
-    public function join($table, $style = '', ...$bindables) : Builder
+    public function join($table, string $on, string $style = '', ...$bindables) : Builder
     {
-        if (is_callable($table)) {
-            $group = new Group($this->adapter, 'noop');
-            $table($group);
-            $table = $this->appendBindings(
-                'join',
-                "$group",
-                $group->getBindings()
-            );
+        if (is_object($table) && $table instanceof Select) {
+            $bindables = array_merge($table->getBindings(), $bindables);
+            $table = "$table";
         }
-        $table = $this->appendBindings('join', $table, $bindables);
-        $this->tables[] = sprintf('%s JOIN %s', $style, $table);
+        $table = $this->appendBindings(
+            'join',
+            sprintf('%s JOIN %s ON %s', $style, $table, $on),
+            $bindables
+        );
+        $this->tables[] = $table;
         return $this;
     }
 
-    public function leftJoin($table, ...$bindables) : Builder
+    public function leftJoin($table, string $on, ...$bindables) : Builder
     {
-        return $this->join($table, 'LEFT', ...$bindables);
+        return $this->join($table, $on, 'LEFT', ...$bindables);
     }
 
-    public function rightJoin($table, ...$bindables) : Builder
+    public function rightJoin($table, string $on, ...$bindables) : Builder
     {
-        return $this->join($table, 'RIGHT', ...$bindables);
+        return $this->join($table, $on, 'RIGHT', ...$bindables);
     }
 
-    public function outerJoin($table, ...$bindables) : Builder
+    public function outerJoin($table, string $on, ...$bindables) : Builder
     {
-        return $this->join($table, 'OUTER', ...$bindables);
+        return $this->join($table, $on, 'OUTER', ...$bindables);
     }
 
-    public function fullOuterJoin($table, ...$bindables) : Builder
+    public function fullOuterJoin($table, string $on, ...$bindables) : Builder
     {
-        return $this->join($table, 'FULL OUTER', ...$bindables);
+        return $this->join($table, $on, 'FULL OUTER', ...$bindables);
     }
 
     public function orderBy($sql) : Builder
@@ -102,20 +101,10 @@ class Select extends Builder
 
     public function __toString() : string
     {
-        $tables = $this->tables;
-        if ($this->isSubquery) {
-            $tables[0] = "({$tables[0]}";
-            $last = array_pop($tables);
-            $last = "$last)";
-            if (is_string($this->isSubquery)) {
-                $last = " $alias";
-            }
-            $tables[] = $last;
-        }
         $sql = sprintf(
             'SELECT %s FROM %s%s%s%s%s%s%s',
             implode(', ', $this->fields),
-            implode(' ', $tables),
+            implode(' ', $this->tables),
             $this->wheres ? ' WHERE '.implode(' ', $this->wheres) : '',
             $this->group ? ' GROUP BY '.$this->group : '',
             ($this->group && $this->havings) ? " HAVING {$this->havings} " : '',
@@ -130,6 +119,13 @@ class Select extends Builder
                 $this->appendBindings('having', $sql, $query->getBindings());
             }
         }
+        if ($this->isSubquery) {
+            $sql = "($sql)";
+            if (is_string($this->isSubquery)) {
+                $sql .= " AS {$this->isSubquery}";
+            }
+        }
+        var_dump($sql);
         return $sql;
     }
 
