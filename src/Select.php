@@ -17,6 +17,7 @@ class Select extends Builder
     protected $order = null;
     protected $unions = [];
     protected $driverOptions = [];
+    protected $isSubquery = false;
 
     public function setDriverOptions(array $driver_options = [])
     {
@@ -31,6 +32,15 @@ class Select extends Builder
 
     public function join($table, $style = '', ...$bindables) : Builder
     {
+        if (is_callable($table)) {
+            $group = new Group($this->adapter, 'noop');
+            $table($group);
+            $table = $this->appendBindings(
+                'join',
+                "$group",
+                $group->getBindings()
+            );
+        }
         $table = $this->appendBindings('join', $table, $bindables);
         $this->tables[] = sprintf('%s JOIN %s', $style, $table);
         return $this;
@@ -92,10 +102,20 @@ class Select extends Builder
 
     public function __toString() : string
     {
+        $tables = $this->tables;
+        if ($this->isSubquery) {
+            $tables[0] = "({$tables[0]}";
+            $last = array_pop($tables);
+            $last = "$last)";
+            if (is_string($this->isSubquery)) {
+                $last = " $alias";
+            }
+            $tables[] = $last;
+        }
         $sql = sprintf(
             'SELECT %s FROM %s%s%s%s%s%s%s',
             implode(', ', $this->fields),
-            implode(' ', $this->tables),
+            implode(' ', $tables),
             $this->wheres ? ' WHERE '.implode(' ', $this->wheres) : '',
             $this->group ? ' GROUP BY '.$this->group : '',
             ($this->group && $this->havings) ? " HAVING {$this->havings} " : '',
@@ -185,6 +205,21 @@ class Select extends Builder
         while (false !== ($row = $stmt->fetch(...$args))) {
             yield $row;
         }
+    }
+
+    /**
+     * Indicates this query will be run as a subquery. The SQL will be wrapped
+     * in parentheses and optionally aliased at runtime. To turn subqueries off
+     * again, pass an empty string as the alias.
+     *
+     * @param string|null The alias to use. If you don't need one, leave it
+     *  empty.
+     * @return self
+     */
+    public function asSubquery(string $alias = null)
+    {
+        $this->isSubquery = isset($alias) ? $alias : true;
+        return $this;
     }
 }
 
