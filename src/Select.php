@@ -125,7 +125,6 @@ class Select extends Builder
                 $sql .= " AS {$this->isSubquery}";
             }
         }
-        var_dump($sql);
         return $sql;
     }
 
