@@ -17,6 +17,7 @@ class Select extends Builder
     protected $order = null;
     protected $unions = [];
     protected $driverOptions = [];
+    protected $isSubquery = false;
 
     public function setDriverOptions(array $driver_options = [])
     {
@@ -29,31 +30,39 @@ class Select extends Builder
         return $this;
     }
 
-    public function join($table, $style = '', ...$bindables) : Builder
+    public function join($table, string $on, string $style = '', ...$bindables) : Builder
     {
-        $table = $this->appendBindings('join', $table, $bindables);
-        $this->tables[] = sprintf('%s JOIN %s', $style, $table);
+        if (is_object($table) && $table instanceof Select) {
+            $bindables = array_merge($table->getBindings(), $bindables);
+            $table = "$table";
+        }
+        $table = $this->appendBindings(
+            'join',
+            sprintf('%s JOIN %s ON %s', $style, $table, $on),
+            $bindables
+        );
+        $this->tables[] = $table;
         return $this;
     }
 
-    public function leftJoin($table, ...$bindables) : Builder
+    public function leftJoin($table, string $on, ...$bindables) : Builder
     {
-        return $this->join($table, 'LEFT', ...$bindables);
+        return $this->join($table, $on, 'LEFT', ...$bindables);
     }
 
-    public function rightJoin($table, ...$bindables) : Builder
+    public function rightJoin($table, string $on, ...$bindables) : Builder
     {
-        return $this->join($table, 'RIGHT', ...$bindables);
+        return $this->join($table, $on, 'RIGHT', ...$bindables);
     }
 
-    public function outerJoin($table, ...$bindables) : Builder
+    public function outerJoin($table, string $on, ...$bindables) : Builder
     {
-        return $this->join($table, 'OUTER', ...$bindables);
+        return $this->join($table, $on, 'OUTER', ...$bindables);
     }
 
-    public function fullOuterJoin($table, ...$bindables) : Builder
+    public function fullOuterJoin($table, string $on, ...$bindables) : Builder
     {
-        return $this->join($table, 'FULL OUTER', ...$bindables);
+        return $this->join($table, $on, 'FULL OUTER', ...$bindables);
     }
 
     public function orderBy($sql) : Builder
@@ -108,6 +117,12 @@ class Select extends Builder
                 extract($union);
                 $sql .= " UNION $style $query";
                 $this->appendBindings('having', $sql, $query->getBindings());
+            }
+        }
+        if ($this->isSubquery) {
+            $sql = "($sql)";
+            if (is_string($this->isSubquery)) {
+                $sql .= " AS {$this->isSubquery}";
             }
         }
         return $sql;
@@ -185,6 +200,21 @@ class Select extends Builder
         while (false !== ($row = $stmt->fetch(...$args))) {
             yield $row;
         }
+    }
+
+    /**
+     * Indicates this query will be run as a subquery. The SQL will be wrapped
+     * in parentheses and optionally aliased at runtime. To turn subqueries off
+     * again, pass an empty string as the alias.
+     *
+     * @param string|null The alias to use. If you don't need one, leave it
+     *  empty.
+     * @return self
+     */
+    public function asSubquery(string $alias = null)
+    {
+        $this->isSubquery = isset($alias) ? $alias : true;
+        return $this;
     }
 }
 
