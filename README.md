@@ -64,12 +64,13 @@ Low-level:
 ```php
 <?php
 
-$query->join('bar USING(baz)', 'LEFT');
+$query->join('bar', 'bar.baz = foo.baz', 'LEFT');
 
 ```
 
-The second parameter is the join-style. If omitted defaults to a straight join.
-If you join contains placeholders, add them as subsequent parameters.
+The second parameter is the join condition, the third parameter is the join
+style. If omitted defaults to a straight join. If you join contains
+placeholders, add them as subsequent parameters.
 
 > The Query builder does not support, anywhere you can pass bindings for
 > placeholders, the use of named parameters. _Always_ use question marks. Named
@@ -82,18 +83,32 @@ Shorthands:
 ```php
 <?php
 
-$query->leftJoin('bar1 USING(baz1)')
-    ->rightJoin('bar2 USING(baz2)')
-    ->outerJoin('bar3 USING(baz3)')
-    ->fullOuterJoin('bar4 ON baz4 = ?', $baz4);
+$query->leftJoin('bar1', 'foo = baz')
+    ->rightJoin('bar2', 'foo = baz')
+    ->outerJoin('bar3', 'foo = baz')
+    ->fullOuterJoin('bar4', 'foo = baz AND foobar = ?', $baz4);
 
 ```
 
 Again, any subsequent parameters are bindings to placeholders.
 
 ## Subqueries
-If any bindable is itself a `Select` query builder, it becomes a _subquery_ and
-the associated bindings are "hoisted" to the parent query.
+If any bindable or joined table is itself a `Select` query builder, it becomes
+a _subquery_ and the associated bindings are "hoisted" to the parent query.
+
+You can also specifically instruct a built query to act as a subquery with an
+optional alias:
+
+```php
+<?php
+
+$query = $db->selectFrom('foo')->select('bar');
+
+$query->asSubquery('foobar');
+
+echo $db->selectFrom('baz')->select($query);
+// "SELECT (SELECT bar FROM foo) foobar FROM baz"
+```
 
 ## Choosing which fields to select
 The default is to select `*` so if that's what you want you don't need to
