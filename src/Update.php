@@ -5,10 +5,16 @@ namespace Quibble\Query;
 use PDO;
 use PDOException;
 use Quibble\Dabble\SqlException;
+use Quibble\Dabble\Raw;
 
 class Update extends Builder
 {
     use Where;
+
+    /**
+     * @var string
+     */
+    private $boundSql = '';
 
     /**
      * Execute the update statement. The first argument is a hash of key/value
@@ -26,7 +32,11 @@ class Update extends Builder
     {
         $error = false;
         $errmode = $this->adapter->getAttribute(PDO::ATTR_ERRMODE);
-        $this->bindables['values'] = $set;
+        $this->boundSql = $this->appendBindings(
+            'values',
+            $this->bindingsToSql($set),
+            $set
+        );
         $result = false;
         $stmt = $this->getExecutedStatement($driver_options);
         if (!$stmt) {
@@ -51,18 +61,27 @@ class Update extends Builder
      */
     public function __toString() : string
     {
+        return sprintf(
+            "UPDATE %s SET %s WHERE %s",
+            $this->tables[0],
+            $this->boundSql,
+            implode(' ', $this->wheres)
+        );
+    }
+
+    /**
+     * @return string
+     */
+    private function bindingsToSql(array $bindables) : string
+    {
         $modifiers = [];
-        foreach (array_keys($this->bindables['values']) as $field) {
+        foreach ($bindables as $field => $value) {
             if (!is_numeric($field)) {
                 $modifiers[] = "$field = ?";
             }
         }
-        return sprintf(
-            "UPDATE %s SET %s WHERE %s",
-            $this->tables[0],
-            implode(', ', $modifiers),
-            implode(' ', $this->wheres)
-        );
+        $this->boundSql = implode(', ', $modifiers);
+        return $this->boundSql;
     }
 }
 
