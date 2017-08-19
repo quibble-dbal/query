@@ -89,9 +89,10 @@ class Select extends Builder
         return $this;
     }
 
-    public function union(Select $query, $style = '')
+    public function union(Select $query, $style = '') : Builder
     {
         $this->unions[] = compact('style', 'query');
+        return $this;
     }
 
     public function unionAll(Select $query)
