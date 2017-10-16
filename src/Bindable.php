@@ -81,7 +81,7 @@ trait Bindable
             } elseif (is_bool($value)) {
                 $stmt->bindValue($pdokey, $value, PDO::PARAM_BOOL);
             } else {
-                $stmt->bindValue($pdokey, $value, PDO::PARAM_STR);
+                $stmt->bindValue($pdokey, "$value", PDO::PARAM_STR);
             }
         }
         return $stmt;
