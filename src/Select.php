@@ -194,12 +194,10 @@ class Select extends Builder
 
     public function generate(...$args) : Generator
     {
-        $stmt = $this->getExecutedStatement();
-        if (!$stmt) {
-            return false;
-        }
-        while (false !== ($row = $stmt->fetch(...$args))) {
-            yield $row;
+        if ($stmt = $this->getExecutedStatement()) {
+            while (false !== ($row = $stmt->fetch(...$args))) {
+                yield $row;
+            }
         }
     }
 
