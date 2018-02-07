@@ -19,17 +19,32 @@ class Select extends Builder
     protected $driverOptions = [];
     protected $isSubquery = false;
 
-    public function setDriverOptions(array $driver_options = [])
+    /**
+     * @param array $driver_options
+     * @return void
+     */
+    public function setDriverOptions(array $driver_options = []) : void
     {
         $this->driverOptions = $driver_options;
     }
 
-    public function andFrom($table) : Builder
+    /**
+     * @string $table
+     * @return Quibble\Query\Builder
+     */
+    public function andFrom(string $table) : Builder
     {
         $this->tables[] = ", $table";
         return $this;
     }
 
+    /**
+     * @param string|Quibble\Query\Select $table
+     * @param string $on
+     * @param string $style `'left'` etc.
+     * @param mixed ...$bindables
+     * @return Quibble\Query\Builder
+     */
     public function join($table, string $on, string $style = '', ...$bindables) : Builder
     {
         if (is_object($table) && $table instanceof Select) {
@@ -45,61 +60,120 @@ class Select extends Builder
         return $this;
     }
 
+    /**
+     * @param string|Quibble\Query\Select $table
+     * @param string $on
+     * @param mixed ...$bindables
+     * @return Quibble\Query\Builder
+     */
     public function leftJoin($table, string $on, ...$bindables) : Builder
     {
         return $this->join($table, $on, 'LEFT', ...$bindables);
     }
 
+    /**
+     * @param string|Quibble\Query\Select $table
+     * @param string $on
+     * @param mixed ...$bindables
+     * @return Quibble\Query\Builder
+     */
     public function rightJoin($table, string $on, ...$bindables) : Builder
     {
         return $this->join($table, $on, 'RIGHT', ...$bindables);
     }
 
+    /**
+     * @param string|Quibble\Query\Select $table
+     * @param string $on
+     * @param mixed ...$bindables
+     * @return Quibble\Query\Builder
+     */
     public function outerJoin($table, string $on, ...$bindables) : Builder
     {
         return $this->join($table, $on, 'OUTER', ...$bindables);
     }
 
+    /**
+     * @param string|Quibble\Query\Select $table
+     * @param string $on
+     * @param mixed ...$bindables
+     * @return Quibble\Query\Builder
+     */
     public function fullOuterJoin($table, string $on, ...$bindables) : Builder
     {
         return $this->join($table, $on, 'FULL OUTER', ...$bindables);
     }
 
-    public function orderBy($sql) : Builder
+    /**
+     * @param string $sql
+     * @return Quibble\Query\Builder
+     */
+    public function orderBy(string $sql) : Builder
     {
         $this->order = $sql;
         return $this;
     }
 
-    public function groupBy($sql) : Builder
+    /**
+     * @param string $sql
+     * @return Quibble\Query\Builder
+     */
+    public function groupBy(string $sql) : Builder
     {
         $this->group = $sql;
         return $this;
     }
 
-    public function select(...$fields) : Builder
+    /**
+     * @param string ...$fields
+     * @return Quibble\Query\Builder
+     */
+    public function select(string ...$fields) : Builder
     {
         $this->fields = $fields;
         return $this;
     }
 
+    /**
+     * @param string $sql
+     * @return Quibble\Query\Builder
+     */
     public function having($sql, ...$bindables) : Builder
     {
         $this->havings = $this->appendBindings('having', $sql, $bindables);
         return $this;
     }
 
-    public function union(Select $query, $style = '') : Builder
+    /**
+     * Allows you to union with another builder.
+     *
+     * @param Quibble\Query\Select $query
+     * @param string $style E.g. `'all'`
+     * @return Quibble\Query\Builder
+     */
+    public function union(Select $query, string $style = '') : Builder
     {
         $this->unions[] = compact('style', 'query');
         return $this;
     }
 
+    /**
+     * Shorthand for `union($query, 'ALL')`.
+     *
+     * @param Quibble\Query\Select $query
+     * @return Quibble\Query\Builder
+     * @see Quibble\Query\Select::union
+     */
     public function unionAll(Select $query)
     {
         return $this->union($query, 'ALL');
     }
 
+    /**
+     * Generates SQL statement suitable for `PDO::prepare`.
+     *
+     * @return string
+     */
     public function __toString() : string
     {
         $sql = sprintf(
@@ -129,6 +203,14 @@ class Select extends Builder
         return $sql;
     }
 
+    /**
+     * Proxy to `PDOStatement::fetch`.
+     *
+     * @param mixed ...$args
+     * @return mixed
+     * @throws Quibble\Query\SelectException if no results and error mode is set
+     *  to `PDO::ERRMODE_EXCEPTION`.
+     */
     public function fetch(...$args)
     {
         $errmode = $this->adapter->getAttribute(PDO::ATTR_ERRMODE);
@@ -145,6 +227,14 @@ class Select extends Builder
         }
     }
 
+    /**
+     * Proxy to `PDOStatement::fetchAll`.
+     *
+     * @param mixed ...$args
+     * @return mixed
+     * @throws Quibble\Query\SelectException if no results and error mode is set
+     *  to `PDO::ERRMODE_EXCEPTION`.
+     */
     public function fetchAll(...$args)
     {
         $errmode = $this->adapter->getAttribute(PDO::ATTR_ERRMODE);
@@ -162,7 +252,13 @@ class Select extends Builder
         }
     }
 
-    public function fetchColumn(int $column_number = 0, $field = null)
+    /**
+     * Proxy to `PDOStatement::fetchColumn`.
+     *
+     * @param int $column_number Defaults to null.
+     * @return mixed The column's value, or `false` if nothing was found.
+     */
+    public function fetchColumn(int $column_number = 0)
     {
         $stmt = $this->getExecutedStatement();
         if (!$stmt) {
@@ -171,7 +267,16 @@ class Select extends Builder
         return $stmt->fetchColumn($column_number);
     }
 
-    public function fetchObject($class_name = 'stdClass', array $ctor_args = [])
+    /**
+     * Proxy to `PDOStatement::fetchObject`.
+     *
+     * @param string $class_name Defaults to `stdClass`.
+     * @param array $ctor_args Optional constructor arguments.
+     * @return mixed
+     * @throws Quibble\Query\SelectException if no results and error mode is set
+     *  to `PDO::ERRMODE_EXCEPTION`.
+     */
+    public function fetchObject(string $class_name = 'stdClass', array $ctor_args = [])
     {
         $errmode = $this->adapter->getAttribute(PDO::ATTR_ERRMODE);
         $stmt = $this->getExecutedStatement();
@@ -187,17 +292,38 @@ class Select extends Builder
         }
     }
 
-    public function count($what = '*') : int
+    /**
+     * Count results in built select statement.
+     *
+     * @param string $what What to count, defaults to `'*'`.
+     * @return int
+     */
+    public function count(string $what = '*') : int
     {
         return (int)$this->select("COUNT($what)")->fetchColumn();
     }
 
+    /**
+     * Like `fetchAll`, only returns a Generator.
+     *
+     * @param mixed ...$args See `fetchAll`.
+     * @return Generator
+     * @throws Quibble\Query\SelectException if no results and error mode is set
+     *  to PDO::ERRMODE_EXCEPTION.
+     * @see Quibble\Query\Select::fetchAll()
+     */
     public function generate(...$args) : Generator
     {
+        $errmode = $this->adapter->getAttribute(PDO::ATTR_ERRMODE);
+        $found = 0;
         if ($stmt = $this->getExecutedStatement()) {
             while (false !== ($row = $stmt->fetch(...$args))) {
+                $found++;
                 yield $row;
             }
+        }
+        if ($found == 0 && $errmode == PDO::ERRMODE_EXCEPTION) {
+            throw new SelectException("$this (".implode(',', $this->getBindings()).")");
         }
     }
 
