@@ -164,7 +164,7 @@ class Select extends Builder
      * @return Quibble\Query\Builder
      * @see Quibble\Query\Select::union
      */
-    public function unionAll(Select $query)
+    public function unionAll(Select $query) : Builder
     {
         return $this->union($query, 'ALL');
     }
@@ -231,11 +231,11 @@ class Select extends Builder
      * Proxy to `PDOStatement::fetchAll`.
      *
      * @param mixed ...$args
-     * @return mixed
+     * @return array
      * @throws Quibble\Query\SelectException if no results and error mode is set
      *  to `PDO::ERRMODE_EXCEPTION`.
      */
-    public function fetchAll(...$args)
+    public function fetchAll(...$args) : array
     {
         $errmode = $this->adapter->getAttribute(PDO::ATTR_ERRMODE);
         $result = false;
@@ -330,11 +330,11 @@ class Select extends Builder
     /**
      * Indicates this query will be run as a subquery. The SQL will be wrapped
      * in parentheses and optionally aliased at runtime. To turn subqueries off
-     * again, pass an empty string as the alias.
+     * again, pass null as the alias.
      *
      * @param string|null The alias to use. If you don't need one, leave it
      *  empty.
-     * @return self
+     * @return Quibble\Query\Builder
      */
     public function asSubquery(string $alias = null)
     {
