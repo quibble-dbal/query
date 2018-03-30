@@ -65,13 +65,13 @@ abstract class Builder
      * possible.
      *
      * @param array $driver_options Optional driver-specific parameters.
-     * @return PDOStatement|false On success, the statement. If error mode isn't
-     *  set to PDO::ERRMODE_EXCEPTION, false on failure.
+     * @return PDOStatement|null On success, the statement. If error mode isn't
+     *  set to PDO::ERRMODE_EXCEPTION, null on failure.
      * @throws Quibble\Query\SqlException if the statement could not be built
      *  and error mode is set to PDO::ERRMODE_EXCEPTION.
      * @see PDO::prepare
      */
-    public function getStatement(array $driver_options = [])
+    public function getStatement(array $driver_options = []) :? PDOStatement
     {
         $sql = $this->__toString();
         if (!isset(static::$statements[$sql])) {
@@ -82,7 +82,7 @@ abstract class Builder
                 );
                 if (!static::$statements[$sql]) {
                     unset(static::$statements[$sql]);
-                    return false;
+                    return null;
                 }
             } catch (PDOException $e) {
                 throw new SqlException(
@@ -99,13 +99,13 @@ abstract class Builder
      * Get the executed statement.
      *
      * @param array $driver_options Optional driver-specific parameters.
-     * @return PDOStatement|false On success, the statement. If error mode isn't
-     *  set to PDO::ERRMODE_EXCEPTION, false on failure.
+     * @return PDOStatement|null On success, the statement. If error mode isn't
+     *  set to PDO::ERRMODE_EXCEPTION, null on failure.
      * @throws Quibble\Query\SqlException if the statement could not be built
      *  and error mode is set to PDO::ERRMODE_EXCEPTION.
      * @see Quibble\Query\Builder::getStatement
      */
-    public function getExecutedStatement(array $driver_options = [])
+    public function getExecutedStatement(array $driver_options = []) :? PDOStatement
     {
         $stmt = $this->getStatement($driver_options);
         if (!$stmt) {
