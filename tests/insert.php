@@ -17,7 +17,8 @@ return function ($test) : Generator {
 DROP TABLE IF EXISTS test;
 CREATE TABLE test (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    foo VARCHAR(255) NOT NULL
+    foo VARCHAR(255) NOT NULL,
+    bar TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 EOT
@@ -28,6 +29,13 @@ EOT
     yield function () use (&$pdo) {
         $res = $pdo->insertInto('test')
             ->execute(['foo' => 'monomelodies']);
+        assert($res === true);
+    };
+
+    /** We can insert raw values by wrapping in an array */
+    yield function () use (&$pdo) {
+        $res = $pdo->insertInto('test')
+            ->execute(['foo' => 'monomelodies', 'bar' => [$pdo->now()]]);
         assert($res === true);
     };
 
