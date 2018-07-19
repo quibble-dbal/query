@@ -72,18 +72,19 @@ trait Bindable
     protected function applyBindings(PDOStatement $stmt) : PDOStatement
     {
         $bindings = $this->getBindings();
-        foreach ($bindings as $key => $value) {
+        $key = 1;
+        foreach ($bindings as $value) {
             if (is_array($value)) {
                 continue;
             }
-            $pdokey = $key + 1;
             if (is_null($value)) {
-                $stmt->bindValue($pdokey, $value, PDO::PARAM_NULL);
+                $stmt->bindValue($key, $value, PDO::PARAM_NULL);
             } elseif (is_bool($value)) {
-                $stmt->bindValue($pdokey, $value, PDO::PARAM_BOOL);
+                $stmt->bindValue($key, $value, PDO::PARAM_BOOL);
             } else {
-                $stmt->bindValue($pdokey, "$value", PDO::PARAM_STR);
+                $stmt->bindValue($key, "$value", PDO::PARAM_STR);
             }
+            ++$key;
         }
         return $stmt;
     }
