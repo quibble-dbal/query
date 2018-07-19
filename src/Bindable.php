@@ -4,7 +4,6 @@ namespace Quibble\Query;
 
 use PDO;
 use PDOStatement;
-use Quibble\Dabble\Raw;
 
 trait Bindable
 {
@@ -35,8 +34,7 @@ trait Bindable
     
     /**
      * Internal helper to append bindings to the correct subkey. This also
-     * replaces any binding where the value is an instance of Quibble\Dabble\Raw
-     * with its raw, `__toString()`'d value.
+     * replaces any binding where the value is an array with its "raw" value.
      *
      * @param string $key The subkey to bind to.
      * @param string $sql The SQL snippet we want to bind to.
