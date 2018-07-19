@@ -73,6 +73,9 @@ trait Bindable
     {
         $bindings = $this->getBindings();
         foreach ($bindings as $key => $value) {
+            if (is_array($value)) {
+                continue;
+            }
             $pdokey = $key + 1;
             if (is_null($value)) {
                 $stmt->bindValue($pdokey, $value, PDO::PARAM_NULL);
