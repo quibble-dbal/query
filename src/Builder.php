@@ -85,11 +85,7 @@ abstract class Builder
                     return null;
                 }
             } catch (PDOException $e) {
-                throw new SqlException(
-                    $this->__toString(),
-                    SqlException::PREPARATION,
-                    $e
-                );
+                throw new SqlException($this->__toString(), SqlException::PREPARATION, $e);
             }
         }
         return static::$statements[$sql];
@@ -109,7 +105,7 @@ abstract class Builder
     {
         $stmt = $this->getStatement($driver_options);
         if (!$stmt) {
-            return false;
+            return null;
         }
         $this->applyBindings($stmt)->execute();
         return $stmt;
