@@ -46,7 +46,7 @@ trait Bindable
         $parts = explode('?', $sql);
         foreach (array_values($bindables) as $i => $bindable) {
             if (is_array($bindable)) {
-                $parts[$i] .= $bindable[0];
+                continue;
             } elseif ($bindable instanceof Select) {
                 $parts[$i] .= "$bindable";
                 $parts[$i] = $this->appendBindings(
