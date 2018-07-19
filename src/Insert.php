@@ -64,12 +64,18 @@ class Insert extends Builder
     public function __toString() : string
     {
         $bindings = $this->bindables['values'];
-        return sprintf(
-            "INSERT INTO %s (%s) VALUES (%s)",
-            $this->tables[0],
-            implode(', ', array_keys($bindings)),
-            implode(', ', array_fill(0, count($bindings), '?'))
-        );
+        $sql = sprintf("INSERT INTO %s (", $this->tables[0]);
+        $sql .= implode(', ', array_keys($bindings)).') VALUES (';
+        $placeholders = [];
+        foreach ($bindings as $binding) {
+            if (is_array($binding)) {
+                $placeholders[] = $binding[0];
+            } else {
+                $placeholders[] = '?';
+            }
+        }
+        $sql .= implode(', ', $placeholders).')';
+        return $sql;
     }
 }
 
