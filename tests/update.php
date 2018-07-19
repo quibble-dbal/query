@@ -12,7 +12,7 @@ return function ($test) : Generator {
         $pdo = new class(':memory:') extends Adapter {
             use Buildable;
         };
-        $this->pdo->exec(<<<EOT
+        $pdo->exec(<<<EOT
 DROP TABLE IF EXISTS test;
 CREATE TABLE test (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -45,7 +45,7 @@ EOT
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $e = null;
         try {
-            $this->pdo->updateTable('test')
+            $pdo->updateTable('test')
                 ->where('id = ?', 12345)
                 ->execute(['foo' => 'adams']);
         } catch (UpdateException $e) {
