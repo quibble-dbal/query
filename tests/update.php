@@ -16,7 +16,8 @@ return function ($test) : Generator {
 DROP TABLE IF EXISTS test;
 CREATE TABLE test (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    foo VARCHAR(255) NOT NULL
+    foo VARCHAR(255) NOT NULL,
+    bar TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 INSERT INTO test (foo) VALUES ('bar'), ('baz'), ('buzz');
 
@@ -29,6 +30,14 @@ EOT
         $res = $pdo->updateTable('test')
             ->where('id = ?', 1)
             ->execute(['foo' => 'douglas']);
+        assert($res === true);
+    };
+
+    /** We can update a column with a raw value */
+    yield function () use (&$pdo) {
+        $res = $pdo->updateTable('test')
+            ->where('id = ?', 1)
+            ->execute(['bar' => [$pdo->now()]]);
         assert($res === true);
     };
 
