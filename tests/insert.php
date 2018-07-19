@@ -25,21 +25,21 @@ EOT
     });
 
     /** insert should insert a new row */
-    yield function () use ($pdo) {
+    yield function () use (&$pdo) {
         $res = $pdo->insertInto('test')
             ->execute(['foo' => 'monomelodies']);
         assert($res === true);
     };
 
     /** insert should return false if nothing was inserted */
-    yield function () use ($pdo) {
+    yield function () use (&$pdo) {
         $res = $pdo->insertInto('test2')
             ->execute(['foo' => null]);
         assert($res === false);
     };
 
     /** insert should throw an exception if nothing was inserted */
-    yield function () use ($pdo) {
+    yield function () use (&$pdo) {
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $e = null;
         try {
