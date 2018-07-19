@@ -27,12 +27,12 @@ EOT
      */
     yield function () use ($pdo) {
         $query = new Select($pdo, 'test');
-        yield assert($query instanceof Select);
+        assert($query instanceof Select);
         $query->where('id = ?', 1);
-        yield assert($query instanceof Select);
+        assert($query instanceof Select);
         $query->orWhere('id = ? AND foo = ?', 2, 'baz');
         $result = $query->fetchAll(PDO::FETCH_ASSOC);
-        yield assert(count($result) == 2);
+        assert(count($result) == 2);
     };
 };
 
