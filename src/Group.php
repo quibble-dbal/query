@@ -3,6 +3,7 @@
 namespace Quibble\Query;
 
 use DomainException;
+use PDOStatement;
 
 class Group extends Builder
 {
