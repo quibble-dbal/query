@@ -28,14 +28,14 @@ EOT
     yield function () use ($pdo) {
         $res = $pdo->insertInto('test')
             ->execute(['foo' => 'monomelodies']);
-        yield assert($res === true);
+        assert($res === true);
     };
 
     /** insert should return false if nothing was inserted */
     yield function () use ($pdo) {
         $res = $pdo->insertInto('test2')
             ->execute(['foo' => null]);
-        yield assert($res === false);
+        assert($res === false);
     };
 
     /** insert should throw an exception if nothing was inserted */
@@ -47,7 +47,7 @@ EOT
                 ->execute(['foo' => null]);
         } catch (SqlException $e) {
         }
-        yield assert($e instanceof SqlException);
+        assert($e instanceof SqlException);
     };
 };
 
