@@ -15,7 +15,7 @@
     },
     "require-dev": {
         "gentry/gentry": "^0.13.0",
-        "quibble/sqlite": "^1.6",
+        "quibble/sqlite": "^2.0.0",
         "toast/unit": "^1.3"
     },
     "autoload": {
