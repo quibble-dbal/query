@@ -1,23 +1,18 @@
 <?php
 
-namespace Quibble\Tests;
-
 use Quibble\Sqlite\Adapter;
 use Quibble\Query\DeleteException;
 use Quibble\Query\Buildable;
-use PDO;
 
 /**
  * Deletion
  */
-class DeleteTest
-{
-    public function __wakeup()
-    {
-        $this->pdo = new class(':memory:') extends Adapter {
+return function ($test) : Generator {
+    $test->beforeEach(function () use (&$pdo) {
+        $pdo = new class(':memory:') extends Adapter {
             use Buildable;
         };
-        $this->pdo->exec(<<<EOT
+        $pdo->exec(<<<EOT
 DROP TABLE IF EXISTS test;
 CREATE TABLE test (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -27,44 +22,35 @@ INSERT INTO test (foo) VALUES ('bar'), ('baz'), ('buzz');
 
 EOT
         );
-    }
+    });
 
-    /**
-     * delete should delete a row {?}
-     */
-    public function testDelete()
-    {
-        $res = $this->pdo->deleteFrom('test')
+    /** delete should delete a row */
+    yield function () use ($pdo) {
+        $res = $pdo->deleteFrom('test')
             ->where('id = ?', 1)
             ->execute();
-        yield assert($res === true);
-    }
+        assert($res === true);
+    };
     
-    /**
-     * delete should return false if nothing was deleted {?}
-     */
-    public function testNoDelete()
-    {
-        $res = $this->pdo->deleteFrom('test')
+    /** delete should return false if nothing was deleted */
+    yield function () use ($pdo) {
+        $res = $pdo->deleteFrom('test')
             ->where('id = ?', 12345)
             ->execute();
-        yield assert($res === false);
-    }
+        assert($res === false);
+    };
     
-    /**
-     * delete should throw an exception if nothing was deleted {?}
-     */
-    public function testNoDeleteWithException()
-    {
+    /** delete should throw an exception if nothing was deleted */
+    yield function () use ($pdo) {
         $e = null;
-        $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         try {
-            $this->pdo->deleteFrom('test')
+            $pdo->deleteFrom('test')
                 ->where('id = ?', 12345)
                 ->execute();
         } catch (DeleteException $e) {
         }
-        yield assert($e instanceof DeleteException);
-    }
-}
+        assert($e instanceof DeleteException);
+    };
+};
 
