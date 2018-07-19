@@ -25,7 +25,7 @@ EOT
     });
 
     /** delete should delete a row */
-    yield function () use ($pdo) {
+    yield function () use (&$pdo) {
         $res = $pdo->deleteFrom('test')
             ->where('id = ?', 1)
             ->execute();
@@ -33,7 +33,7 @@ EOT
     };
     
     /** delete should return false if nothing was deleted */
-    yield function () use ($pdo) {
+    yield function () use (&$pdo) {
         $res = $pdo->deleteFrom('test')
             ->where('id = ?', 12345)
             ->execute();
@@ -41,7 +41,7 @@ EOT
     };
     
     /** delete should throw an exception if nothing was deleted */
-    yield function () use ($pdo) {
+    yield function () use (&$pdo) {
         $e = null;
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         try {
