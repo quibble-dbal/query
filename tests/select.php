@@ -25,7 +25,7 @@ EOT
      * We can correctly instantiate a Builder. We can then chain it using
      * `where`. We can also add an `orWhere` accepting multiple parameters.
      */
-    yield function () use ($pdo) {
+    yield function () use (&$pdo) {
         $query = new Select($pdo, 'test');
         assert($query instanceof Select);
         $query->where('id = ?', 1);
