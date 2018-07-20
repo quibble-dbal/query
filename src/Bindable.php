@@ -44,10 +44,12 @@ trait Bindable
     protected function appendBindings(string $key, string $sql, array $bindables) : string
     {
         $parts = explode('?', $sql);
-        foreach (array_values($bindables) as $i => $bindable) {
+        $i = 0;
+        foreach (array_values($bindables) as $bindable) {
             if (is_array($bindable)) {
                 continue;
-            } elseif ($bindable instanceof Select) {
+            }
+            if ($bindable instanceof Select) {
                 $parts[$i] .= "$bindable";
                 $parts[$i] = $this->appendBindings(
                     $key,
@@ -58,6 +60,7 @@ trait Bindable
                 $parts[$i] .= '?';
                 $this->bindables[$key][] = $bindable;
             }
+            ++$i;
         }
         $sql = implode('', $parts);
         return $sql;
