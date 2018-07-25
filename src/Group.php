@@ -3,6 +3,7 @@
 namespace Quibble\Query;
 
 use DomainException;
+use PDOStatement;
 
 class Group extends Builder
 {
@@ -14,12 +15,12 @@ class Group extends Builder
         return implode(' ', $this->wheres);
     }
 
-    public function getStatement(array $driver_options = [])
+    public function getStatement(array $driver_options = []) :? PDOStatement
     {
         throw new DomainException("Cannot get a statement for a group.");
     }
 
-    public function getExecutedStatement(array $driver_options = [])
+    public function getExecutedStatement(array $driver_options = []) :? PDOStatement
     {
         throw new DomainException("Cannot get a statement for a group.");
     }

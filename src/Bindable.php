@@ -4,7 +4,6 @@ namespace Quibble\Query;
 
 use PDO;
 use PDOStatement;
-use Quibble\Dabble\Raw;
 
 trait Bindable
 {
@@ -35,8 +34,7 @@ trait Bindable
     
     /**
      * Internal helper to append bindings to the correct subkey. This also
-     * replaces any binding where the value is an instance of Quibble\Dabble\Raw
-     * with its raw, `__toString()`'d value.
+     * replaces any binding where the value is an array with its "raw" value.
      *
      * @param string $key The subkey to bind to.
      * @param string $sql The SQL snippet we want to bind to.
@@ -46,10 +44,12 @@ trait Bindable
     protected function appendBindings(string $key, string $sql, array $bindables) : string
     {
         $parts = explode('?', $sql);
-        foreach (array_values($bindables) as $i => $bindable) {
-            if ($bindable instanceof Raw) {
-                $parts[$i] .= "$bindable";
-            } elseif ($bindable instanceof Select) {
+        $i = 0;
+        foreach (array_values($bindables) as $bindable) {
+            if (is_array($bindable)) {
+                continue;
+            }
+            if ($bindable instanceof Select) {
                 $parts[$i] .= "$bindable";
                 $parts[$i] = $this->appendBindings(
                     $key,
@@ -60,6 +60,7 @@ trait Bindable
                 $parts[$i] .= '?';
                 $this->bindables[$key][] = $bindable;
             }
+            ++$i;
         }
         $sql = implode('', $parts);
         return $sql;
@@ -74,15 +75,19 @@ trait Bindable
     protected function applyBindings(PDOStatement $stmt) : PDOStatement
     {
         $bindings = $this->getBindings();
-        foreach ($bindings as $key => $value) {
-            $pdokey = $key + 1;
-            if (is_null($value)) {
-                $stmt->bindValue($pdokey, $value, PDO::PARAM_NULL);
-            } elseif (is_bool($value)) {
-                $stmt->bindValue($pdokey, $value, PDO::PARAM_BOOL);
-            } else {
-                $stmt->bindValue($pdokey, "$value", PDO::PARAM_STR);
+        $key = 1;
+        foreach ($bindings as $value) {
+            if (is_array($value)) {
+                continue;
             }
+            if (is_null($value)) {
+                $stmt->bindValue($key, $value, PDO::PARAM_NULL);
+            } elseif (is_bool($value)) {
+                $stmt->bindValue($key, $value, PDO::PARAM_BOOL);
+            } else {
+                $stmt->bindValue($key, "$value", PDO::PARAM_STR);
+            }
+            ++$key;
         }
         return $stmt;
     }

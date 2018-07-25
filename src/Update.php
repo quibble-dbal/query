@@ -76,7 +76,9 @@ class Update extends Builder
     {
         $modifiers = [];
         foreach ($bindables as $field => $value) {
-            if (!is_numeric($field)) {
+            if (is_array($value)) {
+                $modifiers[] = "$field = {$value[0]}";
+            } else {
                 $modifiers[] = "$field = ?";
             }
         }

@@ -340,7 +340,7 @@ Adapters implementing the `Bindable` trait have the convenience method
 ```php
 <?php
 
-$query = $pdo::insertInto('fooTable');
+$query = $pdo->insertInto('fooTable');
 ```
 
 > When passing multiple arrays, mutliple `INSERT` statements are executed.
@@ -360,12 +360,26 @@ control what gets updated:
 
 $query = new Quibble\Query\Update($pdo, $tableName);
 // or, alternatively:
-$query = $pdo::updateTable($tableName);
+$query = $pdo->updateTable($tableName);
 
 $query->where('foo = ? AND bar = ?', $foo, $bar)
     ->execute(['baz' => $foobar]);
 // UPDATE tableName SET baz = ? WHERE foo = ? AND bar = ?
 // with bindings foo, bar and foobar.
+```
+
+## Inserting or updating raw values
+Sometimes you need to insert or update "raw" SQL, e.g. `SET column = NOW()`.
+Wrap the raw statement in an array to accomplish this:
+
+```php
+<?php
+
+$pdo->insertInto('foo')
+    ->execute(['column' => ['NOW()']]);
+$pdo->updateTable('foo')
+    ->where('id = ?', $id)
+    ->execute(['column' => ['NOW()']]);
 ```
 
 ## Deleting data
@@ -375,7 +389,7 @@ Like updating, only the `execute` method does not accept any parameters:
 
 $query = new Quibble\Query\Delete($pdo, $tableName);
 // or, alternatively:
-$query = $pdo::deleteFrom($tableName);
+$query = $pdo->deleteFrom($tableName);
 
 $query->where('foo = ? AND bar = ?', $foo, $bar)
     ->execute();
