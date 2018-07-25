@@ -11,7 +11,7 @@
     ],
     "require": {
         "php": ">=7.2",
-        "quibble/dabble": "^2.0.0"
+        "quibble/dabble": "^2.0.1"
     },
     "require-dev": {
         "gentry/gentry": "^0.13.0",
