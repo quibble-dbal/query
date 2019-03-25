@@ -231,17 +231,17 @@ class Select extends Builder
      * Proxy to `PDOStatement::fetchAll`.
      *
      * @param mixed ...$args
-     * @return array
+     * @return array|null
      * @throws Quibble\Query\SelectException if no results and error mode is set
      *  to `PDO::ERRMODE_EXCEPTION`.
      */
-    public function fetchAll(...$args) : array
+    public function fetchAll(...$args) :? array
     {
         $errmode = $this->adapter->getAttribute(PDO::ATTR_ERRMODE);
-        $result = false;
+        $result = null;
         $stmt = $this->getExecutedStatement($this->driverOptions);
         if (!$stmt) {
-            return false;
+            return null;
         }
         if ((false !== ($result = $stmt->fetchAll(...$args))) and $result) {
             return $result;
