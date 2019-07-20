@@ -53,7 +53,7 @@ class Select extends Builder
         }
         $table = $this->appendBindings(
             'join',
-            sprintf('%s JOIN %s ON %s', $style, $table, $on),
+            sprintf(preg_match("@^\w+$@", $on) ? '%s JOIN %s USING(%s)' : '%s JOIN %s ON %s', $style, $table, $on),
             $bindables
         );
         $this->tables[] = $table;
