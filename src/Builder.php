@@ -37,17 +37,10 @@ abstract class Builder
      * Construct a query builder.
      *
      * @param PDO $adapter The database connection.
-     * @param string|Quibble\Query\Builder $table The base table to work on. A
-     *  `Select` query can add more tables using `andFrom` or one of the
-     *  `joinNNN` methods.
      */
-    public function __construct(PDO $adapter, $table)
+    public function __construct(PDO $adapter)
     {
         $this->adapter = $adapter;
-        if ($table instanceof Builder) {
-            $table = $this->appendBindings('values', "$table", $table->getBindings());
-        }
-        $this->tables = [$table];
     }
 
     /**
