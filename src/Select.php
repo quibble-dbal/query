@@ -20,6 +20,22 @@ class Select extends Builder
     protected $isSubquery = false;
 
     /**
+     * Construct a query builder.
+     *
+     * @param PDO $adapter The database connection.
+     * @param string|Quibble\Query\Select $table The base table to work on. A
+     *  `Select` query can add more tables using `andFrom` or the `join` method.
+     */
+    public function __construct(PDO $adapter, string|Select $table)
+    {
+        parent::__construct($adapter);
+        if ($table instanceof Builder) {
+            $table = $this->appendBindings('values', "$table", $table->getBindings());
+        }
+        $this->tables = [$table];
+    }
+
+    /**
      * @param array $driver_options
      * @return void
      */
@@ -69,50 +85,6 @@ class Select extends Builder
         }
         $this->tables[] = $join;
         return $this;
-    }
-
-    /**
-     * @param string|Quibble\Query\Select $table
-     * @param string $on
-     * @param mixed ...$bindables
-     * @return Quibble\Query\Builder
-     */
-    public function leftJoin($table, string $on, ...$bindables) : self
-    {
-        return $this->join($table, $on, 'LEFT', ...$bindables);
-    }
-
-    /**
-     * @param string|Quibble\Query\Select $table
-     * @param string $on
-     * @param mixed ...$bindables
-     * @return Quibble\Query\Builder
-     */
-    public function rightJoin($table, string $on, ...$bindables) : self
-    {
-        return $this->join($table, $on, 'RIGHT', ...$bindables);
-    }
-
-    /**
-     * @param string|Quibble\Query\Select $table
-     * @param string $on
-     * @param mixed ...$bindables
-     * @return Quibble\Query\Builder
-     */
-    public function outerJoin($table, string $on, ...$bindables) : self
-    {
-        return $this->join($table, $on, 'OUTER', ...$bindables);
-    }
-
-    /**
-     * @param string|Quibble\Query\Select $table
-     * @param string $on
-     * @param mixed ...$bindables
-     * @return Quibble\Query\Builder
-     */
-    public function fullOuterJoin($table, string $on, ...$bindables) : self
-    {
-        return $this->join($table, $on, 'FULL OUTER', ...$bindables);
     }
 
     /**
@@ -191,7 +163,7 @@ class Select extends Builder
             'SELECT %s FROM %s%s%s%s%s%s%s',
             implode(', ', $this->fields),
             implode(' ', $this->tables),
-            $this->wheres ? ' WHERE '.implode(' ', $this->wheres) : '',
+            $this->wheres ? ' WHERE '.array_reduce($this->wheres, [$this, 'recursiveImplode'], '') : '',
             $this->group ? ' GROUP BY '.$this->group : '',
             ($this->group && $this->havings) ? " HAVING {$this->havings} " : '',
             $this->order ? ' ORDER BY '.$this->order : '',
