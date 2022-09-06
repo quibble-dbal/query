@@ -57,7 +57,7 @@ class Delete extends Builder
         return sprintf(
             "DELETE FROM %s WHERE %s",
             $this->tables[0],
-            implode(' ', $this->wheres)
+            array_reduce($this->wheres, [$this, 'recursiveImplode'], '')
         );
     }
 }
