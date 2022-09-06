@@ -139,7 +139,7 @@ class Select extends Builder
      * @param string ...$fields
      * @return Quibble\Query\Builder
      */
-    public function select(string ...$fields) : self
+    public function fields(string ...$fields) : self
     {
         $this->fields = $fields;
         return $this;
