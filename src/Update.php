@@ -71,7 +71,7 @@ class Update extends Builder
             "UPDATE %s SET %s WHERE %s",
             $this->tables[0],
             $this->boundSql,
-            implode(' ', $this->wheres)
+            array_reduce($this->wheres, [$this, 'recursiveImplode'], '')
         );
     }
 
