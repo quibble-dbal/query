@@ -43,6 +43,7 @@ EOT
 
     /** update should return false if nothing was updated */
     yield function () use (&$pdo) {
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
         $res = $pdo->updateTable('test')
             ->where('id = ?', 1234)
             ->execute(['foo' => 'adams']);
