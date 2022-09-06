@@ -17,7 +17,6 @@ class Join
         if (isset($this->type)) {
             throw new JoinException("The join style (inner, left, right, full) can only be set once.");
         }
-        $this->type = 'INNER';
         $this->table($table);
         return $this;
     }
@@ -70,7 +69,7 @@ class Join
         }
         return preg_replace("@\s+@", ' ', sprintf(
             '%s JOIN %s %s',
-            $this->type,
+            $this->type ?? '',
             $this->table,
             $this->joinCondition
         ));
