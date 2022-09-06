@@ -48,8 +48,8 @@ EOT
      */
     yield function () use (&$pdo) {
         $query = new Select($pdo, 'test');
-        $query = $query->join(function (Join $join) {
-            $join->inner('test2')->using('id');
+        $query = $query->join(function (Join $join) : Join {
+            return $join->inner('test2')->using('id');
         })->where('id = ?', 1);
         $result = $query->fetch(PDO::FETCH_ASSOC);
         assert($result['bar'] == 'baz');
@@ -60,8 +60,8 @@ EOT
      */
     yield function () use (&$pdo) {
         $query = new Select($pdo, 'test');
-        $query = $query->join(function (Join $join) {
-            $join->left('test2')->using('id');
+        $query = $query->join(function (Join $join) : Join {
+            return $join->left('test2')->using('id');
         })->where('id = ?', 2);
         $result = $query->fetch(PDO::FETCH_ASSOC);
         assert($result['bar'] == null);
@@ -72,8 +72,8 @@ EOT
      */
     yield function () use (&$pdo) {
         $query = new Select($pdo, 'test');
-        $query = $query->join(function (Join $join) {
-            $join->right('test2')->using('id');
+        $query = $query->join(function (Join $join) : Join {
+            return $join->right('test2')->using('id');
         })->where('id = ?', 4);
         $result = $query->fetch(PDO::FETCH_ASSOC);
         assert($result['foo'] == null);
@@ -84,8 +84,8 @@ EOT
      */
     yield function () use (&$pdo) {
         $query = new Select($pdo, 'test');
-        $query = $query->join(function (Join $join) {
-            $join->full('test2')->using('id');
+        $query = $query->join(function (Join $join) : Join {
+            return $join->full('test2')->using('id');
         });
         $result = count($query->fetchAll(PDO::FETCH_ASSOC));
         assert($result == 4);
@@ -96,8 +96,8 @@ EOT
      */
     yield function () use (&$pdo) {
         $query = new Select($pdo, 'test');
-        $query = $query->join(function (Join $join) {
-            $join->inner('test2')->on('test.id = test2.id');
+        $query = $query->join(function (Join $join) : Join {
+            return $join->inner('test2')->on('test.id = test2.id');
         })->where('test.id = ?', 1);
         $result = $query->fetch(PDO::FETCH_ASSOC);
         assert($result['bar'] == 'baz');
@@ -108,8 +108,8 @@ EOT
      */
     yield function () use (&$pdo) {
         $query = new Select($pdo, 'test');
-        $query = $query->join(function (Join $join) {
-            $join->inner('test2')->on('test2.id = ?', 1);
+        $query = $query->join(function (Join $join) : Join {
+            return $join->inner('test2')->on('test2.id = ?', 1);
         })->where('test.id = ?', 1);
         $result = $query->fetch(PDO::FETCH_ASSOC);
         assert($result['bar'] == 'baz');
