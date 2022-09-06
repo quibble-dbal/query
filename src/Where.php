@@ -6,7 +6,7 @@ trait Where
 {
     protected $wheres = [];
 
-    public function where(string|callable $sql, ...$bindables) : self
+    public function where(string|callable $sql, mixed ...$bindables) : self
     {
         $sql = $this->checkGroup($sql);
         if ($bindables) {
@@ -16,7 +16,7 @@ trait Where
         return $this;
     }
     
-    public function orWhere(string|callable $sql, ...$bindables) : self
+    public function orWhere(string|callable $sql, mixed ...$bindables) : self
     {
         $sql = $this->checkGroup($sql);
         if ($bindables) {
