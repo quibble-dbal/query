@@ -59,38 +59,37 @@ $query = $adapter->selectFrom('foo')
 ```
 
 ## Joining
-Low-level:
+As of `quibble/query` v2, joining is done via a _callback_ receiving a `Join`
+object as its single parameter:
 
 ```php
 <?php
 
-$query->join('bar', 'bar.baz = foo.baz', 'LEFT');
+use Quibble\Query\Join;
+
+$query->join(function (Join $join) {
+    $join->inner('bar')
+        ->on('bar.baz = foo.baz');
+});
 
 ```
 
-The second parameter is the join condition, the third parameter is the join
-style. If omitted defaults to a straight join. If you join contains
-placeholders, add them as subsequent parameters.
+The `Join` class supports the following methods for the various join styles,
+each of which expects the desired table as its parameter:
+
+- `inner` - a normal, straight JOIN
+- `left` - a LEFT JOIN
+- `right` - a RIGHT JOIN
+- `full` - a FULL JOIN
+
+Not that `$table` may be either a string, or a `Select` object itself. The
+builder makes sure all bindings are resolved correctly.
 
 > The Query builder does not support, anywhere you can pass bindings for
 > placeholders, the use of named parameters. _Always_ use question marks. Named
 > parameters are handy when manually constructing a large blob of SQL with many
 > of them, but using the query builder you typically only pass one or two
 > bindings per method call so it is not needed to support this.
-
-Shorthands:
-
-```php
-<?php
-
-$query->leftJoin('bar1', 'foo = baz')
-    ->rightJoin('bar2', 'foo = baz')
-    ->outerJoin('bar3', 'foo = baz')
-    ->fullOuterJoin('bar4', 'foo = baz AND foobar = ?', $baz4);
-
-```
-
-Again, any subsequent parameters are bindings to placeholders.
 
 ## Subqueries
 If any bindable or joined table is itself a `Select` query builder, it becomes
