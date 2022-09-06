@@ -23,6 +23,7 @@ CREATE TABLE test2 (
     bar VARCHAR(255)
 );
 INSERT INTO test2 (id, bar) VALUES (1, 'baz');
+INSERT INTO test2 (id, bar) VALUES (4, 'buz');
 
 EOT
         );
@@ -48,10 +49,46 @@ EOT
     yield function () use (&$pdo) {
         $query = new Select($pdo, 'test');
         $query->join(function (Join $join) {
-            $join->table('test2')->using('id');
+            $join->inner('test2')->using('id');
         })->where('id = ?', 1);
         $result = $query->fetch(PDO::FETCH_ASSOC);
         assert($result['bar'] == 'baz');
+    };
+
+    /**
+     * We can left join with USING using a simple join parameter.
+     */
+    yield function () use (&$pdo) {
+        $query = new Select($pdo, 'test');
+        $query->join(function (Join $join) {
+            $join->left('test2')->using('id');
+        })->where('id = ?', 2);
+        $result = $query->fetch(PDO::FETCH_ASSOC);
+        assert($result['bar'] == null);
+    };
+
+    /**
+     * We can right join with USING using a simple join parameter.
+     */
+    yield function () use (&$pdo) {
+        $query = new Select($pdo, 'test');
+        $query->join(function (Join $join) {
+            $join->right('test2')->using('id');
+        })->where('id = ?', 4);
+        $result = $query->fetch(PDO::FETCH_ASSOC);
+        assert($result['foo'] == null);
+    };
+
+    /**
+     * We can full join with USING using a simple join parameter.
+     */
+    yield function () use (&$pdo) {
+        $query = new Select($pdo, 'test');
+        $query->join(function (Join $join) {
+            $join->full('test2')->using('id');
+        });
+        $result = count($query->fetchAll(PDO::FETCH_ASSOC));
+        assert($result == 4);
     };
 
     /**
@@ -60,7 +97,19 @@ EOT
     yield function () use (&$pdo) {
         $query = new Select($pdo, 'test');
         $query->join(function (Join $join) {
-            $join->table('test2')->on('test.id = test2.id');
+            $join->inner('test2')->on('test.id = test2.id');
+        })->where('test.id = ?', 1);
+        $result = $query->fetch(PDO::FETCH_ASSOC);
+        assert($result['bar'] == 'baz');
+    };
+
+    /**
+     * We can join with bindings.
+     */
+    yield function () use (&$pdo) {
+        $query = new Select($pdo, 'test');
+        $query->join(function (Join $join) {
+            $join->inner('test2')->on('test2.id = ?', 1);
         })->where('test.id = ?', 1);
         $result = $query->fetch(PDO::FETCH_ASSOC);
         assert($result['bar'] == 'baz');
