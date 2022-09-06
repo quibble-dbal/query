@@ -8,6 +8,12 @@ use Quibble\Dabble\SqlException;
 
 class Insert extends Builder
 {
+    public function __construct(PDO $adapter, string $table)
+    {
+        parent::__construct($adapter);
+        $this->tables = [$table];
+    }
+
     /**
      * Execute the insert query on one or more supplied sets. If you need to
      * specify $driver_options, you may do so with the final argument.
