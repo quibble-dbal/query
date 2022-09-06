@@ -41,6 +41,7 @@ EOT
 
     /** insert should return false if nothing was inserted */
     yield function () use (&$pdo) {
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
         $res = $pdo->insertInto('test2')
             ->execute(['foo' => null]);
         assert($res === false);
