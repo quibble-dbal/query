@@ -23,7 +23,7 @@ class Select extends Builder
 
     protected array $driverOptions = [];
 
-    protected bool $isSubquery = false;
+    protected string $alias;
 
     /**
      * Construct a query builder.
@@ -51,11 +51,14 @@ class Select extends Builder
     }
 
     /**
-     * @string $table
+     * @string|Quibble\Query\Select $table
      * @return self
      */
-    public function andFrom(string $table) : self
+    public function andFrom(string|Select $table) : self
     {
+        if ($table instanceof Builder) {
+            $table = $this->appendBindings('values', "$table", $table->getBindings());
+        }
         $that = clone $this;
         $that->tables[] = ", $table";
         return $that;
@@ -118,9 +121,10 @@ class Select extends Builder
 
     /**
      * @param string $sql
+     * @param mixed ...$bindables
      * @return self
      */
-    public function having($sql, ...$bindables) : self
+    public function having($sql, mixed ...$bindables) : self
     {
         $that = clone $this;
         $that->havings = $that->appendBindings('having', $sql, $bindables);
@@ -179,11 +183,8 @@ class Select extends Builder
                 $this->appendBindings('having', $sql, $query->getBindings());
             }
         }
-        if ($this->isSubquery) {
-            $sql = "($sql)";
-            if (is_string($this->isSubquery)) {
-                $sql .= " AS {$this->isSubquery}";
-            }
+        if (isset($this->alias)) {
+            $sql = "($sql) AS {$this->alias}";
         }
         return $sql;
     }
@@ -314,17 +315,16 @@ class Select extends Builder
 
     /**
      * Indicates this query will be run as a subquery. The SQL will be wrapped
-     * in parentheses and optionally aliased at runtime. To turn subqueries off
-     * again, pass null as the alias.
+     * in parentheses and aliased at runtime.
      *
-     * @param string|null The alias to use. If you don't need one, leave it
-     *  empty.
+     * @param string The alias to use.
      * @return self
      */
-    public function asSubquery(string $alias = null)
+    public function withAlias(string $alias) : self
     {
-        $this->isSubquery = isset($alias) ? $alias : true;
-        return $this;
+        $that = clone $this;
+        $that->alias = $alias;
+        return $that;
     }
 }
 
