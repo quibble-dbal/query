@@ -73,7 +73,7 @@ class Select extends Builder
         $that = clone $this;
         $join = $callback(new Join);
         if ($bindables = $join->getBindings()) {
-            $join = $this->appendBindings(
+            $join = $that->appendBindings(
                 'join',
                 "$join",
                 $bindables
