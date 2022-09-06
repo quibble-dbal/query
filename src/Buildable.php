@@ -4,22 +4,22 @@ namespace Quibble\Query;
 
 trait Buildable
 {
-    public function selectFrom($table) : Select
+    public function select($table) : Select
     {
         return new Select($this, $table);
     }
 
-    public function insertInto($table) : Insert
+    public function insert($table) : Insert
     {
         return new Insert($this, $table);
     }
 
-    public function updateTable($table) : Update
+    public function update($table) : Update
     {
         return new Update($this, $table);
     }
 
-    public function deleteFrom($table) : Delete
+    public function delete($table) : Delete
     {
         return new Delete($this, $table);
     }
