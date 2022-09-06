@@ -57,8 +57,10 @@ class Select extends Builder
             sprintf(preg_match("@^\w+$@", $on) ? '%s JOIN %s USING(%s)' : '%s JOIN %s ON %s', $style, $table, $on),
             $bindables
         );
-        $this->tables[] = $table;
         */
+        $join = new Join;
+        $callback($join);
+        $this->tables[] = $join;
         return $this;
     }
 
