@@ -32,21 +32,22 @@ class Select extends Builder
      * @string $table
      * @return Quibble\Query\Builder
      */
-    public function andFrom(string $table) : Builder
+    public function andFrom(string $table) : self
     {
         $this->tables[] = ", $table";
         return $this;
     }
 
     /**
-     * @param string|Quibble\Query\Select $table
+     * @param callable $callback
      * @param string $on
      * @param string $style `'left'` etc.
      * @param mixed ...$bindables
      * @return Quibble\Query\Builder
      */
-    public function join($table, string $on, string $style = '', ...$bindables) : Builder
+    public function join(callable $callback) : self
     {
+        /*
         if (is_object($table) && $table instanceof Select) {
             $bindables = array_merge($table->getBindings(), $bindables);
             $table = "$table";
@@ -57,6 +58,7 @@ class Select extends Builder
             $bindables
         );
         $this->tables[] = $table;
+        */
         return $this;
     }
 
@@ -66,7 +68,7 @@ class Select extends Builder
      * @param mixed ...$bindables
      * @return Quibble\Query\Builder
      */
-    public function leftJoin($table, string $on, ...$bindables) : Builder
+    public function leftJoin($table, string $on, ...$bindables) : self
     {
         return $this->join($table, $on, 'LEFT', ...$bindables);
     }
@@ -77,7 +79,7 @@ class Select extends Builder
      * @param mixed ...$bindables
      * @return Quibble\Query\Builder
      */
-    public function rightJoin($table, string $on, ...$bindables) : Builder
+    public function rightJoin($table, string $on, ...$bindables) : self
     {
         return $this->join($table, $on, 'RIGHT', ...$bindables);
     }
@@ -88,7 +90,7 @@ class Select extends Builder
      * @param mixed ...$bindables
      * @return Quibble\Query\Builder
      */
-    public function outerJoin($table, string $on, ...$bindables) : Builder
+    public function outerJoin($table, string $on, ...$bindables) : self
     {
         return $this->join($table, $on, 'OUTER', ...$bindables);
     }
@@ -99,7 +101,7 @@ class Select extends Builder
      * @param mixed ...$bindables
      * @return Quibble\Query\Builder
      */
-    public function fullOuterJoin($table, string $on, ...$bindables) : Builder
+    public function fullOuterJoin($table, string $on, ...$bindables) : self
     {
         return $this->join($table, $on, 'FULL OUTER', ...$bindables);
     }
@@ -108,7 +110,7 @@ class Select extends Builder
      * @param string $sql
      * @return Quibble\Query\Builder
      */
-    public function orderBy(string $sql) : Builder
+    public function orderBy(string $sql) : self
     {
         $this->order = $sql;
         return $this;
@@ -118,7 +120,7 @@ class Select extends Builder
      * @param string $sql
      * @return Quibble\Query\Builder
      */
-    public function groupBy(string $sql) : Builder
+    public function groupBy(string $sql) : self
     {
         $this->group = $sql;
         return $this;
@@ -128,7 +130,7 @@ class Select extends Builder
      * @param string ...$fields
      * @return Quibble\Query\Builder
      */
-    public function select(string ...$fields) : Builder
+    public function select(string ...$fields) : self
     {
         $this->fields = $fields;
         return $this;
@@ -138,7 +140,7 @@ class Select extends Builder
      * @param string $sql
      * @return Quibble\Query\Builder
      */
-    public function having($sql, ...$bindables) : Builder
+    public function having($sql, ...$bindables) : self
     {
         $this->havings = $this->appendBindings('having', $sql, $bindables);
         return $this;
@@ -151,7 +153,7 @@ class Select extends Builder
      * @param string $style E.g. `'all'`
      * @return Quibble\Query\Builder
      */
-    public function union(Select $query, string $style = '') : Builder
+    public function union(Select $query, string $style = '') : self
     {
         $this->unions[] = compact('style', 'query');
         return $this;
@@ -164,7 +166,7 @@ class Select extends Builder
      * @return Quibble\Query\Builder
      * @see Quibble\Query\Select::union
      */
-    public function unionAll(Select $query) : Builder
+    public function unionAll(Select $query) : self
     {
         return $this->union($query, 'ALL');
     }
