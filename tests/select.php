@@ -1,6 +1,6 @@
 <?php
 
-use Quibble\Query\Select;
+use Quibble\Query\{ Select, Join };
 use Quibble\Sqlite\Adapter;
 
 /**
@@ -47,8 +47,9 @@ EOT
      */
     yield function () use (&$pdo) {
         $query = new Select($pdo, 'test');
-        $query->join('test2', 'id')
-            ->where('id = ?', 1);
+        $query->join(function (Join $join) {
+            $join->table('test2')->using('id');
+        })->where('id = ?', 1);
         $result = $query->fetch(PDO::FETCH_ASSOC);
         assert($result['bar'] == 'baz');
     };
@@ -58,8 +59,9 @@ EOT
      */
     yield function () use (&$pdo) {
         $query = new Select($pdo, 'test');
-        $query->join('test2', 'test.id = test2.id')
-            ->where('test.id = ?', 1);
+        $query->join(function (Join $join) {
+            $join->table('test2')->on('test.id = test2.id');
+        })->where('test.id = ?', 1);
         $result = $query->fetch(PDO::FETCH_ASSOC);
         assert($result['bar'] == 'baz');
     };
