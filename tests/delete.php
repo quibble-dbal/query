@@ -34,6 +34,7 @@ EOT
     
     /** delete should return false if nothing was deleted */
     yield function () use (&$pdo) {
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
         $res = $pdo->deleteFrom('test')
             ->where('id = ?', 12345)
             ->execute();
