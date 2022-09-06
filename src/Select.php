@@ -286,7 +286,7 @@ class Select extends Builder
      */
     public function count(string $what = '*') : int
     {
-        return (int)$this->select("COUNT($what)")->fetchColumn();
+        return (int)$this->fields("COUNT($what)")->fetchColumn();
     }
 
     /**
