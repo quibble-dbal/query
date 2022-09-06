@@ -11,13 +11,19 @@ class Select extends Builder
     use Where;
     use Limit;
 
-    protected $fields = ['*'];
-    protected $group = null;
-    protected $havings = null;
-    protected $order = null;
-    protected $unions = [];
-    protected $driverOptions = [];
-    protected $isSubquery = false;
+    protected array $fields = ['*'];
+
+    protected string $group;
+
+    protected array $havings = [];
+
+    protected string $order;
+
+    protected array $unions = [];
+
+    protected array $driverOptions = [];
+
+    protected bool $isSubquery = false;
 
     /**
      * Construct a query builder.
@@ -46,12 +52,13 @@ class Select extends Builder
 
     /**
      * @string $table
-     * @return Quibble\Query\Builder
+     * @return self
      */
     public function andFrom(string $table) : self
     {
-        $this->tables[] = ", $table";
-        return $this;
+        $that = clone $this;
+        $that->tables[] = ", $table";
+        return $that;
     }
 
     /**
@@ -59,23 +66,12 @@ class Select extends Builder
      * @param string $on
      * @param string $style `'left'` etc.
      * @param mixed ...$bindables
-     * @return Quibble\Query\Builder
+     * @return self
      */
     public function join(callable $callback) : self
     {
-        /*
-        if (is_object($table) && $table instanceof Select) {
-            $bindables = array_merge($table->getBindings(), $bindables);
-            $table = "$table";
-        }
-        $table = $this->appendBindings(
-            'join',
-            sprintf(preg_match("@^\w+$@", $on) ? '%s JOIN %s USING(%s)' : '%s JOIN %s ON %s', $style, $table, $on),
-            $bindables
-        );
-        */
-        $join = new Join;
-        $callback($join);
+        $that = clone $this;
+        $join = $callback(new Join);
         if ($bindables = $join->getBindings()) {
             $join = $this->appendBindings(
                 'join',
@@ -83,48 +79,52 @@ class Select extends Builder
                 $bindables
             );
         }
-        $this->tables[] = $join;
-        return $this;
+        $that->tables[] = $join;
+        return $that;
     }
 
     /**
      * @param string $sql
-     * @return Quibble\Query\Builder
+     * @return self
      */
     public function orderBy(string $sql) : self
     {
-        $this->order = $sql;
-        return $this;
+        $that = clone $this;
+        $that->order = $sql;
+        return $that;
     }
 
     /**
      * @param string $sql
-     * @return Quibble\Query\Builder
+     * @return self
      */
     public function groupBy(string $sql) : self
     {
-        $this->group = $sql;
-        return $this;
+        $that = clone $this;
+        $that->group = $sql;
+        return $that;
     }
 
     /**
      * @param string ...$fields
-     * @return Quibble\Query\Builder
+     * @return self
      */
     public function fields(string ...$fields) : self
     {
-        $this->fields = $fields;
-        return $this;
+        $that = clone $this;
+        $that->fields = $fields;
+        return $that;
     }
 
     /**
      * @param string $sql
-     * @return Quibble\Query\Builder
+     * @return self
      */
     public function having($sql, ...$bindables) : self
     {
-        $this->havings = $this->appendBindings('having', $sql, $bindables);
-        return $this;
+        $that = clone $this;
+        $that->havings = $that->appendBindings('having', $sql, $bindables);
+        return $that;
     }
 
     /**
@@ -132,24 +132,26 @@ class Select extends Builder
      *
      * @param Quibble\Query\Select $query
      * @param string $style E.g. `'all'`
-     * @return Quibble\Query\Builder
+     * @return self
      */
     public function union(Select $query, string $style = '') : self
     {
-        $this->unions[] = compact('style', 'query');
-        return $this;
+        $that = clone $this;
+        $that->unions[] = compact('style', 'query');
+        return $that;
     }
 
     /**
      * Shorthand for `union($query, 'ALL')`.
      *
      * @param Quibble\Query\Select $query
-     * @return Quibble\Query\Builder
+     * @return self
      * @see Quibble\Query\Select::union
      */
     public function unionAll(Select $query) : self
     {
-        return $this->union($query, 'ALL');
+        $that = clone $this;
+        return $that->union($query, 'ALL');
     }
 
     /**
@@ -164,9 +166,9 @@ class Select extends Builder
             implode(', ', $this->fields),
             implode(' ', $this->tables),
             $this->wheres ? ' WHERE '.array_reduce($this->wheres, [$this, 'recursiveImplode'], '') : '',
-            $this->group ? ' GROUP BY '.$this->group : '',
-            ($this->group && $this->havings) ? " HAVING {$this->havings} " : '',
-            $this->order ? ' ORDER BY '.$this->order : '',
+            isset($this->group) ? ' GROUP BY '.$this->group : '',
+            (isset($this->group) && $this->havings) ? " HAVING {$this->havings} " : '',
+            isset($this->order) ? ' ORDER BY '.$this->order : '',
             isset($this->limit) ? sprintf(' LIMIT %d', $this->limit) : '',
             isset($this->offset) ? sprintf(' OFFSET %d', $this->offset) : ''
         );
@@ -317,7 +319,7 @@ class Select extends Builder
      *
      * @param string|null The alias to use. If you don't need one, leave it
      *  empty.
-     * @return Quibble\Query\Builder
+     * @return self
      */
     public function asSubquery(string $alias = null)
     {
