@@ -48,7 +48,7 @@ class Join
         return $this;
     }
 
-    public function on(string $on, ...$bindables) : self
+    public function on(string $on, mixed ...$bindables) : self
     {
         $this->joinCondition = "ON $on";
         if ($bindables) {
