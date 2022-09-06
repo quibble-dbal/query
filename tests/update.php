@@ -7,8 +7,8 @@ use Quibble\Query\Buildable;
 /**
  * Updating
  */
-return function ($test) : Generator {
-    $test->beforeEach(function () use (&$pdo) {
+return function () : Generator {
+    $this->beforeEach(function () use (&$pdo) {
         $pdo = new class(':memory:') extends Adapter {
             use Buildable;
         };
