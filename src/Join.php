@@ -25,6 +25,7 @@ class Join
     public function on(string $on) : self
     {
         $this->joinCondition = "ON $on";
+        return $this;
     }
 
     public function __toString() : string
