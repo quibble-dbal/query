@@ -6,7 +6,7 @@ trait Where
 {
     protected $wheres = [];
 
-    public function where($sql, ...$bindables) : self
+    public function where(string|callable $sql, ...$bindables) : self
     {
         $sql = $this->checkGroup($sql);
         if ($bindables) {
@@ -16,22 +16,14 @@ trait Where
         return $this;
     }
     
-    public function andWhere($sql, ...$bindables) : self
-    {
-        if (!$this->wheres) {
-            return $this->where($sql, ...$bindables);
-        }
-        $sql = $this->checkGroup($sql);
-        return $this->where("AND ($sql)", ...$bindables);
-    }
-    
-    public function orWhere($sql, ...$bindables) : self
+    public function orWhere(string|callable $sql, ...$bindables) : self
     {
         $sql = $this->checkGroup($sql);
-        if ($this->wheres) {
-            $sql = "OR ($sql)";
+        if ($bindables) {
+            $sql = $this->appendBindings('where', $sql, $bindables);
         }
-        return $this->where($sql, ...$bindables);
+        $this->wheres[] = [$sql];
+        return $this;
     }
 
     public function in($field, array $values) : string
@@ -48,10 +40,10 @@ trait Where
         return $this->in("$field NOT", $values);
     }
 
-    protected function checkGroup($sql) : string
+    protected function checkGroup(string|callable $sql) : string
     {
         if (is_callable($sql)) {
-            $group = new Group($this->adapter, 'noop');
+            $group = new Group($this->adapter);
             $sql($group);
             $sql = $this->appendBindings(
                 'where',
@@ -60,6 +52,16 @@ trait Where
             );
         }
         return $sql;
+    }
+
+    protected function recursiveImplode(string $carry, string|array $item) : string
+    {
+        static $condition = 'AND';
+        if (is_array($item)) {
+            $condition = $condition == 'AND' ? 'OR' : 'OR';
+            $item = array_reduce($item, [$this, 'recursiveImplode'], '');
+        }
+        return strlen($carry) ? "($carry $condition $item)" : "($item)";
     }
 }
 
