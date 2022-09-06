@@ -10,6 +10,12 @@ class Delete extends Builder
 {
     use Where;
 
+    public function __construct(PDO $adapter, string $table)
+    {
+        parent::__construct($adapter);
+        $this->tables = [$table];
+    }
+
     /**
      * Execute the delete query.
      *
