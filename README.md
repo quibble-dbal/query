@@ -8,15 +8,6 @@ Create a custom class extending your desired adapter which uses the
 ```php
 <?php
 
-// PHP 5.x
-class MyAdapter extends Quibble\Postgresql\Adapter
-{
-    use Quibble\Query\Buildable;
-}
-
-$adapter = new MyAdapter(/* connection params */);
-
-// PHP 7
 $adapter = new class(/* connection params */) extends Quibble\Postgresql\Adapter
 {
     use Quibble\Query\Buildable;
