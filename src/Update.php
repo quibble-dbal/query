@@ -16,6 +16,12 @@ class Update extends Builder
      */
     private $boundSql = '';
 
+    public function __construct(PDO $adapter, string $table)
+    {
+        parent::__construct($adapter);
+        $this->tables = [$table];
+    }
+
     /**
      * Execute the update statement. The first argument is a hash of key/value
      * pairs to update. Optional second argument are driver-specific options.
