@@ -60,6 +60,13 @@ class Select extends Builder
         */
         $join = new Join;
         $callback($join);
+        if ($bindables = $join->getBindings()) {
+            $join = $this->appendBindings(
+                'join',
+                "$join",
+                $bindables
+            );
+        }
         $this->tables[] = $join;
         return $this;
     }
