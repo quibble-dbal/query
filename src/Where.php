@@ -6,7 +6,7 @@ trait Where
 {
     protected $wheres = [];
 
-    public function where($sql, ...$bindables) : Builder
+    public function where($sql, ...$bindables) : self
     {
         $sql = $this->checkGroup($sql);
         if ($bindables) {
@@ -16,7 +16,7 @@ trait Where
         return $this;
     }
     
-    public function andWhere($sql, ...$bindables) : Builder
+    public function andWhere($sql, ...$bindables) : self
     {
         if (!$this->wheres) {
             return $this->where($sql, ...$bindables);
@@ -25,7 +25,7 @@ trait Where
         return $this->where("AND ($sql)", ...$bindables);
     }
     
-    public function orWhere($sql, ...$bindables) : Builder
+    public function orWhere($sql, ...$bindables) : self
     {
         $sql = $this->checkGroup($sql);
         if ($this->wheres) {
