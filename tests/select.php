@@ -6,8 +6,8 @@ use Quibble\Sqlite\Adapter;
 /**
  * Selecting data.
  */
-return function ($test) : Generator {
-    $test->beforeEach(function () use (&$pdo) {
+return function () : Generator {
+    $this->beforeEach(function () use (&$pdo) {
         $pdo = new Adapter(':memory:');
         $pdo->exec(<<<EOT
 DROP TABLE IF EXISTS test;
