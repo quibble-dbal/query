@@ -6,8 +6,15 @@ use PDO;
 use PDOException;
 use Quibble\Dabble\SqlException;
 
+/**
+ * Builder object representing an INSERT query.
+ */
 class Insert extends Builder
 {
+    /**
+     * @param PDO $adapter
+     * @param string $table
+     */
     public function __construct(PDO $adapter, string $table)
     {
         parent::__construct($adapter);
