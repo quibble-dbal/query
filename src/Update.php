@@ -7,14 +7,14 @@ use PDOException;
 use Quibble\Dabble\SqlException;
 use Quibble\Dabble\Raw;
 
+/**
+ * A builder representing an UPDATE statement.
+ */
 class Update extends Builder
 {
     use Where;
 
-    /**
-     * @var string
-     */
-    private $boundSql = '';
+    private string $boundSql = '';
 
     public function __construct(PDO $adapter, string $table)
     {
@@ -76,6 +76,7 @@ class Update extends Builder
     }
 
     /**
+     * @param array $bindables
      * @return string
      */
     private function bindingsToSql(array $bindables) : string
