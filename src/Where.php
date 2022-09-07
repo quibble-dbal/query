@@ -26,20 +26,6 @@ trait Where
         return $this;
     }
 
-    public function in($field, array $values) : string
-    {
-        $sql = "$field IN (";
-        $sql .= implode(', ', array_fill(0, count($values), '?'));
-        $sql .= ')';
-        $sql = $this->appendBindings('where', $sql, array_values($values));
-        return $sql;
-    }
-
-    public function notIn($field, array $values) : string
-    {
-        return $this->in("$field NOT", $values);
-    }
-
     protected function checkGroup(string|callable $sql) : string
     {
         if (is_callable($sql)) {
