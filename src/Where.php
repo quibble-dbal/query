@@ -2,11 +2,22 @@
 
 namespace Quibble\Query;
 
+/**
+ * A trait supplying the WHERE methods.
+ */
 trait Where
 {
-    protected $wheres = [];
+    protected array $wheres = [];
 
-    public function where($sql, ...$bindables) : Builder
+    /**
+     * Add a normal AND WHERE condition. If the $sql is supplied as a callable,
+     * it is called with a $group parameter.
+     *
+     * @param string|callable $sql
+     * @param mixed ...$bindables
+     * @return self
+     */
+    public function where(string|callable $sql, mixed ...$bindables) : self
     {
         $sql = $this->checkGroup($sql);
         if ($bindables) {
@@ -16,42 +27,33 @@ trait Where
         return $this;
     }
     
-    public function andWhere($sql, ...$bindables) : Builder
-    {
-        if (!$this->wheres) {
-            return $this->where($sql, ...$bindables);
-        }
-        $sql = $this->checkGroup($sql);
-        return $this->where("AND ($sql)", ...$bindables);
-    }
-    
-    public function orWhere($sql, ...$bindables) : Builder
+    /**
+     * See `where`, only with an "OR" instead of "AND".
+     *
+     * @param string|callable $sql
+     * @param mixed ...$bindables
+     * @return self
+     */
+    public function orWhere(string|callable $sql, mixed ...$bindables) : self
     {
         $sql = $this->checkGroup($sql);
-        if ($this->wheres) {
-            $sql = "OR ($sql)";
+        if ($bindables) {
+            $sql = $this->appendBindings('where', $sql, $bindables);
         }
-        return $this->where($sql, ...$bindables);
+        $this->wheres[] = [$sql];
+        return $this;
     }
 
-    public function in($field, array $values) : string
-    {
-        $sql = "$field IN (";
-        $sql .= implode(', ', array_fill(0, count($values), '?'));
-        $sql .= ')';
-        $sql = $this->appendBindings('where', $sql, array_values($values));
-        return $sql;
-    }
-
-    public function notIn($field, array $values) : string
-    {
-        return $this->in("$field NOT", $values);
-    }
-
-    protected function checkGroup($sql) : string
+    /**
+     * Internal helper to check (and run) for a grouping.
+     *
+     * @param string|callable $sql
+     * @return string
+     */
+    protected function checkGroup(string|callable $sql) : string
     {
         if (is_callable($sql)) {
-            $group = new Group($this->adapter, 'noop');
+            $group = new Group($this->adapter);
             $sql($group);
             $sql = $this->appendBindings(
                 'where',
@@ -60,6 +62,23 @@ trait Where
             );
         }
         return $sql;
+    }
+
+    /**
+     * Recursively "implode" the where array to a single string.
+     *
+     * @param string $carry The SQL so far.
+     * @param string|array $item
+     * @return string
+     */
+    protected function recursiveImplode(string $carry, string|array $item) : string
+    {
+        static $condition = 'AND';
+        if (is_array($item)) {
+            $condition = $condition == 'AND' ? 'OR' : 'OR';
+            $item = array_reduce($item, [$this, 'recursiveImplode'], '');
+        }
+        return strlen($carry) ? "($carry $condition $item)" : "($item)";
     }
 }
 

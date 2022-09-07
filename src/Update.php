@@ -7,14 +7,20 @@ use PDOException;
 use Quibble\Dabble\SqlException;
 use Quibble\Dabble\Raw;
 
+/**
+ * A builder representing an UPDATE statement.
+ */
 class Update extends Builder
 {
     use Where;
 
-    /**
-     * @var string
-     */
-    private $boundSql = '';
+    private string $boundSql = '';
+
+    public function __construct(PDO $adapter, string $table)
+    {
+        parent::__construct($adapter);
+        $this->tables = [$table];
+    }
 
     /**
      * Execute the update statement. The first argument is a hash of key/value
@@ -65,11 +71,12 @@ class Update extends Builder
             "UPDATE %s SET %s WHERE %s",
             $this->tables[0],
             $this->boundSql,
-            implode(' ', $this->wheres)
+            array_reduce($this->wheres, [$this, 'recursiveImplode'], '')
         );
     }
 
     /**
+     * @param array $bindables
      * @return string
      */
     private function bindingsToSql(array $bindables) : string

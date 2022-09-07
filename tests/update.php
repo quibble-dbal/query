@@ -7,8 +7,8 @@ use Quibble\Query\Buildable;
 /**
  * Updating
  */
-return function ($test) : Generator {
-    $test->beforeEach(function () use (&$pdo) {
+return function () : Generator {
+    $this->beforeEach(function () use (&$pdo) {
         $pdo = new class(':memory:') extends Adapter {
             use Buildable;
         };
@@ -27,7 +27,7 @@ EOT
 
     /** update should update a row */
     yield function () use (&$pdo) {
-        $res = $pdo->updateTable('test')
+        $res = $pdo->update('test')
             ->where('id = ?', 1)
             ->execute(['foo' => 'douglas']);
         assert($res === true);
@@ -35,7 +35,7 @@ EOT
 
     /** We can update a column with a raw value */
     yield function () use (&$pdo) {
-        $res = $pdo->updateTable('test')
+        $res = $pdo->update('test')
             ->where('id = ?', 1)
             ->execute(['bar' => [$pdo->now()]]);
         assert($res === true);
@@ -43,7 +43,8 @@ EOT
 
     /** update should return false if nothing was updated */
     yield function () use (&$pdo) {
-        $res = $pdo->updateTable('test')
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
+        $res = $pdo->update('test')
             ->where('id = ?', 1234)
             ->execute(['foo' => 'adams']);
         assert($res === false);
@@ -54,7 +55,7 @@ EOT
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $e = null;
         try {
-            $pdo->updateTable('test')
+            $pdo->update('test')
                 ->where('id = ?', 12345)
                 ->execute(['foo' => 'adams']);
         } catch (UpdateException $e) {

@@ -8,46 +8,37 @@ use PDO;
 use PDOStatement;
 use PDOException;
 
+/**
+ * Abstract builder class. Base class for the Select, Insert, Update and Delete
+ * builder classes you'll normally use.
+ */
 abstract class Builder
 {
     use Bindable;
 
     /**
      * An instance of a PDO resource.
-     *
-     * @var PDO
      */
-    protected $adapter;
+    protected PDO $adapter;
 
     /**
      * An array of table(s) this query runs on.
-     *
-     * @var array
      */
-    protected $tables = [];
+    protected array $tables = [];
 
     /**
      * Hash of cached statements.
-     *
-     * @var array
      */
-    protected static $statements = [];
+    protected static array $statements = [];
 
     /**
      * Construct a query builder.
      *
      * @param PDO $adapter The database connection.
-     * @param string|Quibble\Query\Builder $table The base table to work on. A
-     *  `Select` query can add more tables using `andFrom` or one of the
-     *  `joinNNN` methods.
      */
-    public function __construct(PDO $adapter, $table)
+    public function __construct(PDO $adapter)
     {
         $this->adapter = $adapter;
-        if ($table instanceof Builder) {
-            $table = $this->appendBindings('values', "$table", $table->getBindings());
-        }
-        $this->tables = [$table];
     }
 
     /**

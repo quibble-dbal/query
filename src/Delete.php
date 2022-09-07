@@ -6,9 +6,22 @@ use PDO;
 use PDOException;
 use Quibble\Dabble\SqlException;
 
+/**
+ * Builder class for DELETE statements.
+ */
 class Delete extends Builder
 {
     use Where;
+
+    /**
+     * @param PDO $adapter
+     * @param string $table
+     */
+    public function __construct(PDO $adapter, string $table)
+    {
+        parent::__construct($adapter);
+        $this->tables = [$table];
+    }
 
     /**
      * Execute the delete query.
@@ -51,7 +64,7 @@ class Delete extends Builder
         return sprintf(
             "DELETE FROM %s WHERE %s",
             $this->tables[0],
-            implode(' ', $this->wheres)
+            array_reduce($this->wheres, [$this, 'recursiveImplode'], '')
         );
     }
 }

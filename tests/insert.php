@@ -8,8 +8,8 @@ use Quibble\Query\Buildable;
 /**
  * Insertions
  */
-return function ($test) : Generator {
-    $test->beforeEach(function () use (&$pdo) {
+return function () : Generator {
+    $this->beforeEach(function () use (&$pdo) {
         $pdo = new class(':memory:') extends Adapter {
             use Buildable;
         };
@@ -27,21 +27,22 @@ EOT
 
     /** insert should insert a new row */
     yield function () use (&$pdo) {
-        $res = $pdo->insertInto('test')
+        $res = $pdo->insert('test')
             ->execute(['foo' => 'monomelodies']);
         assert($res === true);
     };
 
     /** We can insert raw values by wrapping in an array */
     yield function () use (&$pdo) {
-        $res = $pdo->insertInto('test')
+        $res = $pdo->insert('test')
             ->execute(['foo' => 'monomelodies', 'bar' => [$pdo->now()]]);
         assert($res === true);
     };
 
     /** insert should return false if nothing was inserted */
     yield function () use (&$pdo) {
-        $res = $pdo->insertInto('test2')
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
+        $res = $pdo->insert('test2')
             ->execute(['foo' => null]);
         assert($res === false);
     };
@@ -51,7 +52,7 @@ EOT
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $e = null;
         try {
-            $pdo->insertInto('test2')
+            $pdo->insert('test2')
                 ->execute(['foo' => null]);
         } catch (SqlException $e) {
         }

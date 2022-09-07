@@ -2,24 +2,44 @@
 
 namespace Quibble\Query;
 
+/**
+ * Adapter using this trait get the four convenience methods `select`, `insert`,
+ * `update` and `delete` to kickstart a query builder.
+ */
 trait Buildable
 {
-    public function selectFrom($table) : Select
+    /**
+     * @param string|Quibble\Query\Select $table
+     * @return Quibble\Query\Select
+     */
+    public function select(string|Select $table) : Select
     {
         return new Select($this, $table);
     }
 
-    public function insertInto($table) : Insert
+    /**
+     * @param string table
+     * @return Quibble\Query\Insert
+     */
+    public function insert(string $table) : Insert
     {
         return new Insert($this, $table);
     }
 
-    public function updateTable($table) : Update
+    /**
+     * @param string table
+     * @return Quibble\Query\Update
+     */
+    public function update(string $table) : Update
     {
         return new Update($this, $table);
     }
 
-    public function deleteFrom($table) : Delete
+    /**
+     * @param string table
+     * @return Quibble\Query\Delete
+     */
+    public function delete(string $table) : Delete
     {
         return new Delete($this, $table);
     }
