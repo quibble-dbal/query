@@ -8,30 +8,28 @@ use PDO;
 use PDOStatement;
 use PDOException;
 
+/**
+ * Abstract builder class. Base class for the Select, Insert, Update and Delete
+ * builder classes you'll normally use.
+ */
 abstract class Builder
 {
     use Bindable;
 
     /**
      * An instance of a PDO resource.
-     *
-     * @var PDO
      */
-    protected $adapter;
+    protected PDO $adapter;
 
     /**
      * An array of table(s) this query runs on.
-     *
-     * @var array
      */
-    protected $tables = [];
+    protected array $tables = [];
 
     /**
      * Hash of cached statements.
-     *
-     * @var array
      */
-    protected static $statements = [];
+    protected static array $statements = [];
 
     /**
      * Construct a query builder.
