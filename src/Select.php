@@ -5,7 +5,11 @@ namespace Quibble\Query;
 use PDO;
 use PDOStatement;
 use Generator;
+use ReflectionFunction;
 
+/**
+ * A builder for SELECT queries.
+ */
 class Select extends Builder
 {
     use Where;
@@ -26,7 +30,7 @@ class Select extends Builder
     protected string $alias;
 
     /**
-     * Construct a query builder.
+     * Construct the select query builder.
      *
      * @param PDO $adapter The database connection.
      * @param string|Quibble\Query\Select $table The base table to work on. A
@@ -66,14 +70,27 @@ class Select extends Builder
 
     /**
      * @param callable $callback
-     * @param string $on
-     * @param string $style `'left'` etc.
-     * @param mixed ...$bindables
      * @return self
+     * @throws Quibble\Query\JoinException if the callback is invalid.
      */
     public function join(callable $callback) : self
     {
         $that = clone $this;
+        $reflection = new ReflectionFunction($callback);
+        $parameters = $reflection->getParameters();
+        // Some sanity checking...
+        if (count($parameters) != 1) {
+            throw new JoinException("The join callback must take exactly 1 parameter, of the type Quibble\Query\Join.");
+        }
+        $type = $parameters[0]->getType();
+        if (!$type || $type->__toString() != 'Quibble\Query\Join') {
+            throw new JoinException("The join callback must take exactly 1 parameter, of the type Quibble\Query\Join.");
+        }
+        $type = $reflection->getReturnType();
+        if (!$type || $type->__toString() != 'Quibble\Query\Join') {
+            throw new JoinException("The join callback must return a value of the type Quibble\Query\Join.");
+        }
+
         $join = $callback(new Join);
         if ($bindables = $join->getBindings()) {
             $join = $that->appendBindings(
@@ -132,7 +149,7 @@ class Select extends Builder
     }
 
     /**
-     * Allows you to union with another builder.
+     * Allows you to union with another select builder.
      *
      * @param Quibble\Query\Select $query
      * @param string $style E.g. `'all'`
