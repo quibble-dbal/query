@@ -5,6 +5,10 @@ namespace Quibble\Query;
 use PDO;
 use PDOStatement;
 
+/**
+ * A trait containing helpers for "bindable" objects. An object is "bindable" if
+ * one of its methods accept values to be bound to placeholders by PDO.
+ */
 trait Bindable
 {
     /**
