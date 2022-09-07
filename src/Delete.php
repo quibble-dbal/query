@@ -6,10 +6,17 @@ use PDO;
 use PDOException;
 use Quibble\Dabble\SqlException;
 
+/**
+ * Builder class for DELETE statements.
+ */
 class Delete extends Builder
 {
     use Where;
 
+    /**
+     * @param PDO $adapter
+     * @param string $table
+     */
     public function __construct(PDO $adapter, string $table)
     {
         parent::__construct($adapter);
