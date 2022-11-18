@@ -61,18 +61,15 @@ $query = $adapter->select($adapter->select('foo')->where('1=1'));
 ```
 
 ## Selecting from more than one table
-Use the `andFrom` method:
+Just specify multiple table names:
 
 ```php
 <?php
 
-$query = $adapter->selectFrom('foo')
-    ->andFrom('bar');
+$query = $adapter->select('foo, bar');
 // SELECT * FROM foo, bar
 
 ```
-
-Again, the parameter can be a string or a `Select` object.
 
 ## Joining
 As of `quibble/query` v2, joining is done via a _callback_ receiving a `Join`
@@ -221,7 +218,7 @@ the method multiple times.
 
 > At this point it should be noted that, apart from the final fetch call, all
 > methods can be called in any order (with the caveat that of course the order
-> multiple `where`/`order` calls will influence the resulting query).
+> of multiple `where` calls might influence the resulting query).
 
 ## Limiting
 Use the `limit` method. The first argument is the number to limit to, the
