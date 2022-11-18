@@ -1,8 +1,8 @@
 <?php
 
 use Quibble\Sqlite\Adapter;
-use Quibble\Query\UpdateException;
-use Quibble\Query\Buildable;
+use Quibble\Query\{ Buildable, UpdateException };
+use Quibble\Dabble\SqlException;
 
 /**
  * Updating
@@ -61,6 +61,14 @@ EOT
         } catch (UpdateException $e) {
         }
         assert($e instanceof UpdateException);
+        $e = null;
+        try {
+            $pdo->update('test')
+                ->where('id = ?', 1)
+                ->execute(['foo' => null]);
+        } catch (Throwable $e) {
+        }
+        assert($e instanceof SqlException);
     };
 };
 
