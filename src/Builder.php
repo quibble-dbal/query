@@ -98,7 +98,11 @@ abstract class Builder
         if (!$stmt) {
             return null;
         }
-        $this->applyBindings($stmt)->execute();
+        try {
+            $this->applyBindings($stmt)->execute();
+        } catch (PDOException $e) {
+            throw new SqlException($this->__toString(), SqlException::EXECUTION, $e);
+        }
         return $stmt;
     }
 
