@@ -8,25 +8,25 @@
     "packages": [
         {
             "name": "quibble/dabble",
-            "version": "2.2.1",
+            "version": "2.2.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/quibble-dbal/dabble.git",
-                "reference": "e1522718c8650859bc4f692f3b0a4f25b700ea71"
+                "reference": "b5ee02784860eb669c8ca006cec3f7dcb5031bfa"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/quibble-dbal/dabble/zipball/e1522718c8650859bc4f692f3b0a4f25b700ea71",
-                "reference": "e1522718c8650859bc4f692f3b0a4f25b700ea71",
+                "url": "https://api.github.com/repos/quibble-dbal/dabble/zipball/b5ee02784860eb669c8ca006cec3f7dcb5031bfa",
+                "reference": "b5ee02784860eb669c8ca006cec3f7dcb5031bfa",
                 "shasum": ""
             },
             "require": {
                 "php": ">=7.2"
             },
             "require-dev": {
-                "gentry/gentry": "^0.13.0",
-                "gentry/toast": "^0.1.0",
-                "toast/unit": "^1.3"
+                "gentry/gentry": "^0.16.12",
+                "gentry/toast": "^0.2.1",
+                "toast/unit": "^2.2.2"
             },
             "type": "library",
             "autoload": {
@@ -47,9 +47,9 @@
             "description": "DBAL for Quibble",
             "support": {
                 "issues": "https://github.com/quibble-dbal/dabble/issues",
-                "source": "https://github.com/quibble-dbal/dabble/tree/2.2.1"
+                "source": "https://github.com/quibble-dbal/dabble/tree/2.2.2"
             },
-            "time": "2022-03-09T14:44:34+00:00"
+            "time": "2025-02-27T12:46:07+00:00"
         }
     ],
     "packages-dev": [
@@ -766,16 +766,16 @@
         },
         {
             "name": "monomelodies/reflex",
-            "version": "0.3.8",
+            "version": "0.3.9",
             "source": {
                 "type": "git",
                 "url": "https://github.com/monomelodies/reflex.git",
-                "reference": "910e87a02cbe2a8d28a4df24c38554f002637aa4"
+                "reference": "06f055856fa0df6562c13fae0da38aea34c265a2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/monomelodies/reflex/zipball/910e87a02cbe2a8d28a4df24c38554f002637aa4",
-                "reference": "910e87a02cbe2a8d28a4df24c38554f002637aa4",
+                "url": "https://api.github.com/repos/monomelodies/reflex/zipball/06f055856fa0df6562c13fae0da38aea34c265a2",
+                "reference": "06f055856fa0df6562c13fae0da38aea34c265a2",
                 "shasum": ""
             },
             "require": {
@@ -804,9 +804,9 @@
             "description": "Reflection utilities for PHP8+",
             "support": {
                 "issues": "https://github.com/monomelodies/reflex/issues",
-                "source": "https://github.com/monomelodies/reflex/tree/0.3.8"
+                "source": "https://github.com/monomelodies/reflex/tree/0.3.9"
             },
-            "time": "2023-04-22T13:45:24+00:00"
+            "time": "2025-02-27T01:36:28+00:00"
         },
         {
             "name": "psr/container",
@@ -913,24 +913,24 @@
         },
         {
             "name": "quibble/sqlite",
-            "version": "2.0.1",
+            "version": "2.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/quibble-dbal/sqlite.git",
-                "reference": "2c86e616494f1157d154a655d762e23df2ee415c"
+                "reference": "1a5124c05c793b656a72b3eedf1f2ed6590a4ab7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/quibble-dbal/sqlite/zipball/2c86e616494f1157d154a655d762e23df2ee415c",
-                "reference": "2c86e616494f1157d154a655d762e23df2ee415c",
+                "url": "https://api.github.com/repos/quibble-dbal/sqlite/zipball/1a5124c05c793b656a72b3eedf1f2ed6590a4ab7",
+                "reference": "1a5124c05c793b656a72b3eedf1f2ed6590a4ab7",
                 "shasum": ""
             },
             "require": {
-                "php": ">=7.2",
-                "quibble/dabble": "^2.0.1"
+                "php": ">=8.2",
+                "quibble/dabble": "^2.2.2"
             },
             "require-dev": {
-                "gentry/gentry": "^0.10.2"
+                "gentry/gentry": "^0.16.12"
             },
             "type": "library",
             "autoload": {
@@ -951,9 +951,9 @@
             "description": "SQLite adapter for Quibble",
             "support": {
                 "issues": "https://github.com/quibble-dbal/sqlite/issues",
-                "source": "https://github.com/quibble-dbal/sqlite/tree/master"
+                "source": "https://github.com/quibble-dbal/sqlite/tree/2.1.0"
             },
-            "time": "2018-07-25T07:08:18+00:00"
+            "time": "2025-02-27T13:04:28+00:00"
         },
         {
             "name": "seld/jsonlint",
