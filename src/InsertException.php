@@ -19,7 +19,7 @@ class InsertException extends Exception
      * @param int $code
      * @param Throwable $previous
      */
-    public function __construct(string $message = '', int $code = null, Throwable $previous = null)
+    public function __construct(string $message = '', ?int $code = null, ?Throwable $previous = null)
     {
         parent::__construct($message, self::NOAFFECTEDROWS, $previous);
     }
