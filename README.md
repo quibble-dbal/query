@@ -8,15 +8,6 @@ Create a custom class extending your desired adapter which uses the
 ```php
 <?php
 
-// PHP 5.x
-class MyAdapter extends Quibble\Postgresql\Adapter
-{
-    use Quibble\Query\Buildable;
-}
-
-$adapter = new MyAdapter(/* connection params */);
-
-// PHP 7
 $adapter = new class(/* connection params */) extends Quibble\Postgresql\Adapter
 {
     use Quibble\Query\Buildable;
@@ -30,13 +21,26 @@ Their only parameter is the base table name you want your query to operate on:
 ```php
 <?php
 
-$query = $adapter->selectFrom('foo');
+$query = $adapter->select('foo');
 
 ```
 
 You can now pass the `$query` around, call methods to add stuff like conditions,
 options, joins etc. and eventually fetch the result(s). Most calls will return
-the object itself so you can chain calls.
+the object itself so you can chain calls. *Note:* for these chainable methods
+(generally on SELECT queries), the query is _cloned_. So, if you need to work
+with a query object within an `if {...}` condition, say, make sure you assign
+the result. E.g.:
+
+```php
+<?php
+
+$query = $adapter->select('foo');
+if ($someCondition) {
+    $query = $query->where('bar = ?', $baz);
+}
+var_dump($query->fetchAll());
+```
 
 You can also directly instantiate one of the `Query` SQL classes, e.g.:
 
@@ -46,51 +50,59 @@ You can also directly instantiate one of the `Query` SQL classes, e.g.:
 $query = new Quibble\Query\Select($pdo, $tableName);
 ```
 
-## Selecting from more than one table
-Use the `andFrom` method:
+Usually `$tableName` will be a string, but for the `Select` object, it can
+actually be _another_ `Select` object, so it becomes possible to construct
+endlessly complex (sub)queries:
 
 ```php
 <?php
 
-$query = $adapter->selectFrom('foo')
-    ->andFrom('bar');
+$query = $adapter->select($adapter->select('foo')->where('1=1'));
+```
+
+## Selecting from more than one table
+Just specify multiple table names:
+
+```php
+<?php
+
+$query = $adapter->select('foo, bar');
 // SELECT * FROM foo, bar
 
 ```
 
 ## Joining
-Low-level:
+As of `quibble/query` v2, joining is done via a _callback_ receiving a `Join`
+object as its single parameter:
 
 ```php
 <?php
 
-$query->join('bar', 'bar.baz = foo.baz', 'LEFT');
+use Quibble\Query\Join;
+
+$query = $query->join(function (Join $join) {
+    $join->inner('bar')
+        ->on('bar.baz = foo.baz');
+});
 
 ```
 
-The second parameter is the join condition, the third parameter is the join
-style. If omitted defaults to a straight join. If you join contains
-placeholders, add them as subsequent parameters.
+The `Join` class supports the following methods for the various join styles,
+each of which expects the desired table as its parameter:
+
+- `inner` - a normal, straight JOIN
+- `left` - a LEFT JOIN
+- `right` - a RIGHT JOIN
+- `full` - a FULL JOIN
+
+Not that `$table` may be either a string, or a `Select` object itself. The
+builder makes sure all bindings are resolved correctly.
 
 > The Query builder does not support, anywhere you can pass bindings for
 > placeholders, the use of named parameters. _Always_ use question marks. Named
 > parameters are handy when manually constructing a large blob of SQL with many
 > of them, but using the query builder you typically only pass one or two
 > bindings per method call so it is not needed to support this.
-
-Shorthands:
-
-```php
-<?php
-
-$query->leftJoin('bar1', 'foo = baz')
-    ->rightJoin('bar2', 'foo = baz')
-    ->outerJoin('bar3', 'foo = baz')
-    ->fullOuterJoin('bar4', 'foo = baz AND foobar = ?', $baz4);
-
-```
-
-Again, any subsequent parameters are bindings to placeholders.
 
 ## Subqueries
 If any bindable or joined table is itself a `Select` query builder, it becomes
@@ -102,34 +114,34 @@ optional alias:
 ```php
 <?php
 
-$query = $db->selectFrom('foo')->select('bar');
+$query = $db->select('foo')->fields('bar');
 
-$query->asSubquery('foobar');
+$query = $query->asSubquery('foobar');
 
-echo $db->selectFrom('baz')->select($query);
+echo $db->select('baz')->fields($query);
 // "SELECT (SELECT bar FROM foo) foobar FROM baz"
 ```
 
 ## Choosing which fields to select
 The default is to select `*` so if that's what you want you don't need to
-specify anything. To fine-tune, use the `select` method:
+specify anything. To fine-tune, use the `fields` method:
 
 ```php
 <?php
 
-$query->select('foo', 'bar', 'baz AS buzz');
+$query = $query->fields('foo', 'bar', 'baz AS buzz');
 
 ```
 
-`select` takes an arbitrary number of arguments representing the fields you wish
+`fields` takes an arbitrary number of arguments representing the fields you wish
 to select in your query. Hence, the above example would translate to:
 
 ```sql
 SELECT foo, bar, baz AS buzz FROM ...
 ```
 
-Note that if `select` is called multiple times, only the last call specifies the
-fields to select. The default value is `"*"`.
+Note that if `fields` is called multiple times, only the last call specifies the
+fields to select.
 
 ## Decorating fields
 A decorator class is anything that wraps a value and can be `__toString`'d. For
@@ -142,7 +154,7 @@ To automatically wrap a _selected_ field in a decorator, take a look at the
 ```php
 <?php
 
-$query->where('foo = ?', $bar);
+$query = $query->where('foo = ?', $bar);
 
 ```
 
@@ -151,7 +163,7 @@ A WHERE clause is an AND clause by default. To add an OR clause, use `orWhere`:
 ```php
 <?php
 
-$query->orWhere('foo = ?', $bar);
+$query = $query->orWhere('foo = ?', $bar);
 
 ```
 
@@ -161,7 +173,7 @@ calls one would simply pass in multiple clauses in parantheses where applicable:
 ```php
 <?php
 
-$query->where('foo = ? AND (bar = ? OR bar = ?)', $foo, $bar1, $bar2);
+$query = $query->where('foo = ? AND (bar = ? OR bar = ?)', $foo, $bar1, $bar2);
 // ... (AND) foo = ? AND (bar = ? OR bar = ?)
 
 ```
@@ -180,14 +192,14 @@ and allows you to nest conditions:
 ```php
 <?php
 
-$query->where('bar = ?')
+$query = $query->where('bar = ?', 1)
     ->orWhere(function ($query) {
         $query->where('baz = ?', 2)
             ->where('buh = ?', 3);
     });
 });
 
-// SELECT * FROM some_table WHERE 
+// SELECT * FROM some_table WHERE bar = 1 OR (baz = 2 AND buh = 3)
 
 ```
 
@@ -197,7 +209,7 @@ Use the `orderBy` method:
 ```php
 <?php
 
-$query->orderBy('foo ASC');
+$query = $query->orderBy('foo ASC');
 
 ```
 
@@ -206,7 +218,7 @@ the method multiple times.
 
 > At this point it should be noted that, apart from the final fetch call, all
 > methods can be called in any order (with the caveat that of course the order
-> multiple `where`/`order` calls will influence the resulting query).
+> of multiple `where` calls might influence the resulting query).
 
 ## Limiting
 Use the `limit` method. The first argument is the number to limit to, the
@@ -217,7 +229,7 @@ just the offset.
 ```php
 <?php
 
-$query->limit(10, 5);
+$query = $query->limit(10, 5);
 // LIMIT 10 OFFSET 5
 
 ```
@@ -229,7 +241,7 @@ multiple times it will be overwritten). Use the `groupBy` method:
 ```php
 <?php
 
-$query->groupBy('foo, bar');
+$query = $query->groupBy('foo, bar');
 
 ```
 
@@ -239,7 +251,7 @@ additional parameters:
 ```php
 <?php
 
-$query->groupBy('foo, bar')
+$query = $query = $query->groupBy('foo, bar')
     ->having('bar > ?', 42);
 
 ```
@@ -252,7 +264,7 @@ incompatible, so that's up to you.
 ```php
 <?php
 
-$query->union($anotherQuery);
+$query = $query->union($anotherQuery);
 
 ```
 
@@ -270,31 +282,31 @@ the necessary parameters, e.g.:
 ```php
 <?php
 
-$query->where('id IN (SELECT foo_id FROM bar WHERE bar_id = ?)', $bar_id);
+$query = $query->where('id IN (SELECT foo_id FROM bar WHERE bar_id = ?)', $bar_id);
 ```
 
 However, sometimes your set comes from another source and you need to manually
-inject them (and the bindings) into your statement. The `Select` query builder
+inject them (and the bindings) into your statement. The `Group`ed WHERE object
 offers a convenience method for this:
 
 ```php
 <?php
 
-$query->where($query->in('field', $arrayOfPossibleValues));
-
+$query = $query->where(function (Group $group) use ($arrayOfPossibleValues) {
+    return $group->in('field', $arrayOfPossibleValues);
+});
 ```
 
-Similarly, there's a `notIn` method. These methods return _strings_ so you can
-directly pass them to `where`. The bindings are automatically added to the query
-object, so generally you'll use them in conjunction as in the above example.
+Similarly, there's a `notIn` method. Like most `Where` methods, these are
+chainable, so you can go as deep as you like.
 
 ## Fetching the data
 Eventually, you're done building your query and will want data. Just use any
-or the `fetch*` methods as you would on a `PDOStatement`. They accept the same
+of the `fetch*` methods as you would on a `PDOStatement`. They accept the same
 arguments and proxy to the underlying statement.
 
 Quibble\Query also supports a `generate` method which returns a generator
-instead (handy for large query results). It's parameters are the same as `fetch`
+instead (handy for large query results). Its parameters are the same as `fetch`
 and are passed verbatim:
 
 ```php
@@ -315,7 +327,7 @@ the times you can omit it.
 This method returns an integer with the number of found rows.
 
 ## Inserting data
-Use the `Insert` class. It's `execute` method accepts a key/value pair of values
+Use the `Insert` class. Its `execute` method accepts a key/value pair of values
 and performs the insert immediately:
 
 ```php
@@ -335,12 +347,12 @@ $query->execute($array1, $array2, $arrayn);
 ```
 
 Adapters implementing the `Bindable` trait have the convenience method
-`insertInto` defined:
+`insert` defined:
 
 ```php
 <?php
 
-$query = $pdo->insertInto('fooTable');
+$query = $pdo->insert('fooTable');
 ```
 
 > When passing multiple arrays, mutliple `INSERT` statements are executed.
@@ -360,7 +372,7 @@ control what gets updated:
 
 $query = new Quibble\Query\Update($pdo, $tableName);
 // or, alternatively:
-$query = $pdo->updateTable($tableName);
+$query = $pdo->update($tableName);
 
 $query->where('foo = ? AND bar = ?', $foo, $bar)
     ->execute(['baz' => $foobar]);
@@ -375,9 +387,9 @@ Wrap the raw statement in an array to accomplish this:
 ```php
 <?php
 
-$pdo->insertInto('foo')
+$pdo->insert('foo')
     ->execute(['column' => ['NOW()']]);
-$pdo->updateTable('foo')
+$pdo->update('foo')
     ->where('id = ?', $id)
     ->execute(['column' => ['NOW()']]);
 ```
@@ -389,7 +401,7 @@ Like updating, only the `execute` method does not accept any parameters:
 
 $query = new Quibble\Query\Delete($pdo, $tableName);
 // or, alternatively:
-$query = $pdo->deleteFrom($tableName);
+$query = $pdo->delete($tableName);
 
 $query->where('foo = ? AND bar = ?', $foo, $bar)
     ->execute();
@@ -424,25 +436,24 @@ statement (e.g. `getColumnMeta`).
 
 ## Creating custom query builders
 Extending query classes and/or using traits, you can of course build your own
-project-specific query builders! E.g., if you need to generically decorate any
-field with `date` in it to a `Carbon` object:
+project-specific query builders! Some databases support some really exotic stuff
+you might use heavily, making it worthwhile to do this.
 
 ```php
 <?php
 
 class MySelect extends Quibble\Query\Select
 {
-    public function __construct(PDO $pdo, $table)
-    {
-        parent::__construct($pdo, $table);
-        $this->addDecorator(function ($field, $value) {
-            if (strpos($field, 'date') !== false) {
-                $value = new Carbon\Carbon($value);
-            }
-            return $value;
-        });
-    }
+    // ...whatever custom logic you need...
 }
 
+$adapter = new class(...connection...) extends Adapter {
+    use Buildable;
+
+    public function select(string|Select $table)
+    {
+        return new MySelect($this, $table);
+    }
+}
 ```
 

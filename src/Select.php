@@ -5,19 +5,45 @@ namespace Quibble\Query;
 use PDO;
 use PDOStatement;
 use Generator;
+use ReflectionFunction;
 
+/**
+ * A builder for SELECT queries.
+ */
 class Select extends Builder
 {
     use Where;
     use Limit;
 
-    protected $fields = ['*'];
-    protected $group = null;
-    protected $havings = null;
-    protected $order = null;
-    protected $unions = [];
-    protected $driverOptions = [];
-    protected $isSubquery = false;
+    protected array $fields = ['*'];
+
+    protected string $group;
+
+    protected array $havings = [];
+
+    protected string $order;
+
+    protected array $unions = [];
+
+    protected array $driverOptions = [];
+
+    protected string $alias;
+
+    /**
+     * Construct the select query builder.
+     *
+     * @param PDO $adapter The database connection.
+     * @param string|Quibble\Query\Select $table The base table to work on. A
+     *  `Select` query can add more tables using `andFrom` or the `join` method.
+     */
+    public function __construct(PDO $adapter, string|Select $table)
+    {
+        parent::__construct($adapter);
+        if ($table instanceof Builder) {
+            $table = $this->appendBindings('values', "$table", $table->getBindings());
+        }
+        $this->tables = [$table];
+    }
 
     /**
      * @param array $driver_options
@@ -29,144 +55,124 @@ class Select extends Builder
     }
 
     /**
-     * @string $table
-     * @return Quibble\Query\Builder
+     * @string|Quibble\Query\Select $table
+     * @return self
      */
-    public function andFrom(string $table) : Builder
+    public function andFrom(string|Select $table) : self
     {
-        $this->tables[] = ", $table";
-        return $this;
-    }
-
-    /**
-     * @param string|Quibble\Query\Select $table
-     * @param string $on
-     * @param string $style `'left'` etc.
-     * @param mixed ...$bindables
-     * @return Quibble\Query\Builder
-     */
-    public function join($table, string $on, string $style = '', ...$bindables) : Builder
-    {
-        if (is_object($table) && $table instanceof Select) {
-            $bindables = array_merge($table->getBindings(), $bindables);
-            $table = "$table";
+        if ($table instanceof Builder) {
+            $table = $this->appendBindings('values', "$table", $table->getBindings());
         }
-        $table = $this->appendBindings(
-            'join',
-            sprintf('%s JOIN %s ON %s', $style, $table, $on),
-            $bindables
-        );
-        $this->tables[] = $table;
-        return $this;
+        $that = clone $this;
+        $that->tables[] = ", $table";
+        return $that;
     }
 
     /**
-     * @param string|Quibble\Query\Select $table
-     * @param string $on
-     * @param mixed ...$bindables
-     * @return Quibble\Query\Builder
+     * @param callable $callback
+     * @return self
+     * @throws Quibble\Query\JoinException if the callback is invalid.
      */
-    public function leftJoin($table, string $on, ...$bindables) : Builder
+    public function join(callable $callback) : self
     {
-        return $this->join($table, $on, 'LEFT', ...$bindables);
-    }
+        $that = clone $this;
+        $reflection = new ReflectionFunction($callback);
+        $parameters = $reflection->getParameters();
+        // Some sanity checking...
+        if (count($parameters) != 1) {
+            throw new JoinException("The join callback must take exactly 1 parameter, of the type Quibble\Query\Join.");
+        }
+        $type = $parameters[0]->getType();
+        if (!$type || $type->__toString() != 'Quibble\Query\Join') {
+            throw new JoinException("The join callback must take exactly 1 parameter, of the type Quibble\Query\Join.");
+        }
+        $type = $reflection->getReturnType();
+        if (!$type || $type->__toString() != 'Quibble\Query\Join') {
+            throw new JoinException("The join callback must return a value of the type Quibble\Query\Join.");
+        }
 
-    /**
-     * @param string|Quibble\Query\Select $table
-     * @param string $on
-     * @param mixed ...$bindables
-     * @return Quibble\Query\Builder
-     */
-    public function rightJoin($table, string $on, ...$bindables) : Builder
-    {
-        return $this->join($table, $on, 'RIGHT', ...$bindables);
-    }
-
-    /**
-     * @param string|Quibble\Query\Select $table
-     * @param string $on
-     * @param mixed ...$bindables
-     * @return Quibble\Query\Builder
-     */
-    public function outerJoin($table, string $on, ...$bindables) : Builder
-    {
-        return $this->join($table, $on, 'OUTER', ...$bindables);
-    }
-
-    /**
-     * @param string|Quibble\Query\Select $table
-     * @param string $on
-     * @param mixed ...$bindables
-     * @return Quibble\Query\Builder
-     */
-    public function fullOuterJoin($table, string $on, ...$bindables) : Builder
-    {
-        return $this->join($table, $on, 'FULL OUTER', ...$bindables);
+        $join = $callback(new Join);
+        if ($bindables = $join->getBindings()) {
+            $join = $that->appendBindings(
+                'join',
+                "$join",
+                $bindables
+            );
+        }
+        $that->tables[] = $join;
+        return $that;
     }
 
     /**
      * @param string $sql
-     * @return Quibble\Query\Builder
+     * @return self
      */
-    public function orderBy(string $sql) : Builder
+    public function orderBy(string $sql) : self
     {
-        $this->order = $sql;
-        return $this;
+        $that = clone $this;
+        $that->order = $sql;
+        return $that;
     }
 
     /**
      * @param string $sql
-     * @return Quibble\Query\Builder
+     * @return self
      */
-    public function groupBy(string $sql) : Builder
+    public function groupBy(string $sql) : self
     {
-        $this->group = $sql;
-        return $this;
+        $that = clone $this;
+        $that->group = $sql;
+        return $that;
     }
 
     /**
      * @param string ...$fields
-     * @return Quibble\Query\Builder
+     * @return self
      */
-    public function select(string ...$fields) : Builder
+    public function fields(string ...$fields) : self
     {
-        $this->fields = $fields;
-        return $this;
+        $that = clone $this;
+        $that->fields = $fields;
+        return $that;
     }
 
     /**
      * @param string $sql
-     * @return Quibble\Query\Builder
+     * @param mixed ...$bindables
+     * @return self
      */
-    public function having($sql, ...$bindables) : Builder
+    public function having($sql, mixed ...$bindables) : self
     {
-        $this->havings = $this->appendBindings('having', $sql, $bindables);
-        return $this;
+        $that = clone $this;
+        $that->havings = $that->appendBindings('having', $sql, $bindables);
+        return $that;
     }
 
     /**
-     * Allows you to union with another builder.
+     * Allows you to union with another select builder.
      *
      * @param Quibble\Query\Select $query
      * @param string $style E.g. `'all'`
-     * @return Quibble\Query\Builder
+     * @return self
      */
-    public function union(Select $query, string $style = '') : Builder
+    public function union(Select $query, string $style = '') : self
     {
-        $this->unions[] = compact('style', 'query');
-        return $this;
+        $that = clone $this;
+        $that->unions[] = compact('style', 'query');
+        return $that;
     }
 
     /**
      * Shorthand for `union($query, 'ALL')`.
      *
      * @param Quibble\Query\Select $query
-     * @return Quibble\Query\Builder
+     * @return self
      * @see Quibble\Query\Select::union
      */
-    public function unionAll(Select $query) : Builder
+    public function unionAll(Select $query) : self
     {
-        return $this->union($query, 'ALL');
+        $that = clone $this;
+        return $that->union($query, 'ALL');
     }
 
     /**
@@ -180,10 +186,10 @@ class Select extends Builder
             'SELECT %s FROM %s%s%s%s%s%s%s',
             implode(', ', $this->fields),
             implode(' ', $this->tables),
-            $this->wheres ? ' WHERE '.implode(' ', $this->wheres) : '',
-            $this->group ? ' GROUP BY '.$this->group : '',
-            ($this->group && $this->havings) ? " HAVING {$this->havings} " : '',
-            $this->order ? ' ORDER BY '.$this->order : '',
+            $this->wheres ? ' WHERE '.array_reduce($this->wheres, [$this, 'recursiveImplode'], '') : '',
+            isset($this->group) ? ' GROUP BY '.$this->group : '',
+            (isset($this->group) && $this->havings) ? " HAVING {$this->havings} " : '',
+            isset($this->order) ? ' ORDER BY '.$this->order : '',
             isset($this->limit) ? sprintf(' LIMIT %d', $this->limit) : '',
             isset($this->offset) ? sprintf(' OFFSET %d', $this->offset) : ''
         );
@@ -194,11 +200,8 @@ class Select extends Builder
                 $this->appendBindings('having', $sql, $query->getBindings());
             }
         }
-        if ($this->isSubquery) {
-            $sql = "($sql)";
-            if (is_string($this->isSubquery)) {
-                $sql .= " AS {$this->isSubquery}";
-            }
+        if (isset($this->alias)) {
+            $sql = "($sql) AS {$this->alias}";
         }
         return $sql;
     }
@@ -300,7 +303,7 @@ class Select extends Builder
      */
     public function count(string $what = '*') : int
     {
-        return (int)$this->select("COUNT($what)")->fetchColumn();
+        return (int)$this->fields("COUNT($what)")->fetchColumn();
     }
 
     /**
@@ -329,17 +332,16 @@ class Select extends Builder
 
     /**
      * Indicates this query will be run as a subquery. The SQL will be wrapped
-     * in parentheses and optionally aliased at runtime. To turn subqueries off
-     * again, pass null as the alias.
+     * in parentheses and aliased at runtime.
      *
-     * @param string|null The alias to use. If you don't need one, leave it
-     *  empty.
-     * @return Quibble\Query\Builder
+     * @param string The alias to use.
+     * @return self
      */
-    public function asSubquery(string $alias = null)
+    public function withAlias(string $alias) : self
     {
-        $this->isSubquery = isset($alias) ? $alias : true;
-        return $this;
+        $that = clone $this;
+        $that->alias = $alias;
+        return $that;
     }
 }
 

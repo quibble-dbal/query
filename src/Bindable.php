@@ -4,7 +4,12 @@ namespace Quibble\Query;
 
 use PDO;
 use PDOStatement;
+use BackedEnum;
 
+/**
+ * A trait containing helpers for "bindable" objects. An object is "bindable" if
+ * one of its methods accept values to be bound to placeholders by PDO.
+ */
 trait Bindable
 {
     /**
@@ -84,6 +89,8 @@ trait Bindable
                 $stmt->bindValue($key, $value, PDO::PARAM_NULL);
             } elseif (is_bool($value)) {
                 $stmt->bindValue($key, $value, PDO::PARAM_BOOL);
+            } elseif ($value instanceof BackedEnum) {
+                $stmt->bindValue($key, $value->value, PDO::PARAM_STR);
             } else {
                 $stmt->bindValue($key, "$value", PDO::PARAM_STR);
             }
