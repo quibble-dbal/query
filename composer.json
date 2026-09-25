@@ -14,7 +14,7 @@
         "quibble/dabble": "^2.0.1"
     },
     "require-dev": {
-        "gentry/gentry": "^0.13.0",
+        "gentry/gentry": "^0.16.0",
         "quibble/sqlite": "^2.0.0",
         "toast/unit": "^2.2"
     },
