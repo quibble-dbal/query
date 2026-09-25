@@ -65,21 +65,22 @@ abstract class Builder
     public function getStatement(array $driver_options = []) :? PDOStatement
     {
         $sql = $this->__toString();
-        if (!isset(static::$statements[$sql])) {
+        $key = spl_object_hash($this->adapter).$sql;
+        if (!isset(static::$statements[$key])) {
             try {
-                static::$statements[$sql] = $this->adapter->prepare(
+                static::$statements[$key] = $this->adapter->prepare(
                     $sql,
                     $driver_options
                 );
-                if (!static::$statements[$sql]) {
-                    unset(static::$statements[$sql]);
+                if (!static::$statements[$key]) {
+                    unset(static::$statements[$key]);
                     return null;
                 }
             } catch (PDOException $e) {
                 throw new SqlException($this->__toString(), SqlException::PREPARATION, $e);
             }
         }
-        return static::$statements[$sql];
+        return static::$statements[$key];
     }
 
     /**
